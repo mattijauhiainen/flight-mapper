@@ -4,6 +4,7 @@ import { dimBasemap } from './basemap.js';
 import { addLayers } from './flights.js';
 import { animate } from './animate.js';
 import { wireHover } from './hover.js';
+import { wireSelect } from './select.js';
 
 const map = new Map({
     container: 'map',
@@ -23,8 +24,9 @@ map.on('style.load', async () => {
     dimBasemap(map);
     addLayers(map);
     const data = await tracksReady;
-    animate(map, data);
-    wireHover(map, data.epoch);
+    const details = animate(map, data);
+    const muteHover = wireHover(map, data.epoch, details);
+    wireSelect(map, data.epoch, details, muteHover);
 });
 
 export { map };
