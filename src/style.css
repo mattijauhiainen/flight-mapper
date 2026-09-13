@@ -1,7 +1,40 @@
+/* The palette. Every colour on the page is declared here, named for what it is
+   for rather than what it is made of. The runs of near-identical navy and grey
+   are ramps, and each one is listed darkest to lightest.
+
+   src/palette.js resolves these for the map layers, which need literal colour
+   strings; everything the browser draws uses var() directly. */
+:root {
+  /* The basemap, dimmed to night so the flight paths can carry the colour.
+     Darkest first, which is also furthest back. --map-void is the space around
+     the globe, a shade under the ocean so the sphere keeps an edge; matched to
+     the ocean the limb disappears and the globe bleeds into the page. */
+  --map-void: #02040a;
+  --map-ocean: #070c16;
+  --map-graticule: #131d2c;
+  --map-land: #151f2e;
+  --map-coast: #1e2d42;
+  --map-border: #25344a;
+  --map-graticule-label: #3c5070;
+  --map-label: #59718f;
+  --map-label-halo: rgba(7, 12, 22, 0.85);
+
+  /* The flights, and the airport all 168 of them leave from: the only warm
+     colours on the map, and the two that everything else here is built from.
+     --origin is Hong Kong's halo, --origin-core the dot inside it. */
+  --flight-path: #ffcf9b;
+  --origin: #ff8a3d;
+  --origin-core: #fff3e4;
+}
+
 html, body {
   margin: 0;
   padding: 0;
   height: 100%;
+
+  /* A globe does not fill its canvas, and the page shows through around the
+     rim. Left white that ring is the brightest thing on screen. */
+  background: var(--map-void);
 }
 
 #map {
