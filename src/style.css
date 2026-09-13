@@ -8,3 +8,27 @@ html, body {
   position: absolute;
   inset: 0;
 }
+
+.maplibregl-popup-content {
+  padding: 7px 10px;
+  border-radius: 6px;
+  background: rgba(7, 12, 22, 0.92);
+  border: 1px solid rgba(255, 138, 61, 0.35);
+  color: #e9eef6;
+  font: 12px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+}
+
+.maplibregl-popup-content strong {
+  display: block;
+  color: #ffcf9b;
+  letter-spacing: 0.04em;
+}
+
+.maplibregl-popup-content span {
+  color: #9fb0c6;
+}
+
+.maplibregl-popup-tip {
+  display: none;
+}
