@@ -4,7 +4,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 const map = new Map({
     container: 'map',
     style: 'https://demotiles.maplibre.org/globe.json',
-    center: [0, 0],
+    center: [114.17, 22.30],
     zoom: 2
 });
 
