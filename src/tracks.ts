@@ -1,4 +1,4 @@
-import type { FeatureCollection, LineString } from 'geojson';
+import type { Feature, FeatureCollection, LineString } from 'geojson';
 
 // The shape of public/tracks.geojson, as scripts/build_tracks.py writes it.
 // Times are seconds from `epoch`, the unix time of the first departure, and
@@ -10,6 +10,8 @@ export type FlightProperties = {
     km: number;
     times: number[];
 };
+
+export type FlightFeature = Feature<LineString, FlightProperties>;
 
 export interface Tracks extends FeatureCollection<LineString, FlightProperties> {
     epoch: number;
