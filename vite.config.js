@@ -8,5 +8,10 @@ export default defineConfig({
         open: false,
         // Vite rejects requests whose Host header isn't localhost/an IP.
         allowedHosts: ['.nord']
+    },
+    // The dep optimizer doesn't emit maplibre's worker chunk, so the map's
+    // worker 404s. Serve the package's own ESM build instead.
+    optimizeDeps: {
+        exclude: ['maplibre-gl']
     }
 });

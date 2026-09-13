@@ -14,5 +14,8 @@
   "type": "module",
   "devDependencies": {
     "vite": "^8.3.0"
+  },
+  "dependencies": {
+    "maplibre-gl": "^6.9.0"
   }
 }
