@@ -30,10 +30,12 @@
   /* The flights, and the airport all 168 of them leave from: the only warm
      colours on the map, and the two that everything else here is built from.
      --flight-path-hover is the exception, cold on purpose so a hovered path
-     cannot read as merely a bright one. --origin is Hong Kong's halo,
-     --origin-core the dot inside it. */
+     cannot read as merely a bright one. --flight-head is the dot riding the
+     leading edge; --origin is Hong Kong's halo, --origin-core the dot inside
+     it. */
   --flight-path: #ffcf9b;
   --flight-path-hover: #eafcff;
+  --flight-head: #fff6ea;
   --origin: #ff8a3d;
   --origin-core: #fff3e4;
 
@@ -45,11 +47,22 @@
 
   /* Type on those surfaces, brightest to dimmest. */
   --text: #e9eef6;
+  --text-heading: #cbd7e6;
   --text-muted: #9fb0c6;
+  --text-faint: #8598b1;
 
-  /* Type that wants to be noticed takes the colour of a lit flight path, which
-     is what ties the overlays to the map rather than merely near it. */
+  /* Type that wants to be noticed. The clock takes the colour of a lit flight
+     path, which is what ties the overlays to the map rather than merely near
+     it. The live counts are the one place --origin is deliberately not itself:
+     lifted a shade, which is what it takes to stay readable at 13px. */
   --text-accent: var(--flight-path);
+  --text-figure: #ff9d5c;
+
+  /* The replay button and the progress trough it sits under. */
+  --control-bg: color-mix(in srgb, var(--origin) 12%, transparent);
+  --control-bg-hover: color-mix(in srgb, var(--origin) 22%, transparent);
+  --control-border: color-mix(in srgb, var(--origin) 45%, transparent);
+  --track-bed: color-mix(in srgb, white 9%, transparent);
 
   /* Spacing in fours, and everything on the page measures itself in it. */
   --space-xs: 4px;
@@ -75,6 +88,94 @@ html, body {
 #map {
   position: absolute;
   inset: 0;
+}
+
+#panel {
+  position: absolute;
+  top: var(--space-l);
+  left: var(--space-l);
+  z-index: 1;
+  width: 210px;
+  padding: var(--space-m) var(--space-l) var(--space-l);
+  border-radius: var(--radius-m);
+  background: var(--overlay-bg);
+  border: 1px solid var(--overlay-border);
+  backdrop-filter: blur(6px);
+  color: var(--text);
+  font: 13px/1.45 var(--font-stack);
+}
+
+#panel h1 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-heading);
+}
+
+#panel .clock {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-s);
+  margin: var(--space-s) 0 var(--space-xs);
+}
+
+#panel #clock {
+  font-size: 30px;
+  font-weight: 300;
+  line-height: 1.1;
+  color: var(--text-accent);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+#panel #date {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+#panel p {
+  margin: 0;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+#panel #airborne,
+#panel #departed,
+#panel #total {
+  color: var(--text-figure);
+}
+
+#panel .track {
+  margin-top: var(--space-m);
+  height: var(--space-xs);
+  border-radius: 999px;
+  background: var(--track-bed);
+  overflow: hidden;
+}
+
+#panel #bar {
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--origin), var(--flight-path));
+}
+
+#panel #replay {
+  margin-top: var(--space-m);
+  padding: var(--space-xs) var(--space-m);
+  border-radius: var(--radius-s);
+  border: 1px solid var(--control-border);
+  background: var(--control-bg);
+  color: var(--text-accent);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+#panel #replay:hover {
+  background: var(--control-bg-hover);
 }
 
 .maplibregl-popup-content {
