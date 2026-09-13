@@ -1,5 +1,6 @@
 import { Map, NavigationControl, Popup } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { trailPieces } from './trail.js';
 
 const HKG = [113.9185, 22.3089];
 
@@ -36,13 +37,29 @@ function hovered(yes, no) {
     return ['case', ['boolean', ['feature-state', 'hover'], false], yes, no];
 }
 
-const PATH = '#ffcf9b';
+// A point on a path is at LIT as the aircraft passes over it and has cooled to
+// DIM one TRAIL of flying later, so the lit stretch travels with the aircraft
+// and everything behind settles into context. Every feature carries a `fade`
+// between 1 and 0 that the paint mixes across. Hover overrides both.
+//
+// The colours are opaque, and the fade mixes between them rather than running
+// through the alpha channel. Translucent paths would composite where tracks
+// cross, so the crowded approaches to Hong Kong would burn brighter than any
+// single track and a path's brightness would depend on what lay under it.
+const TRAIL = 1.5 * 3600;   // flight seconds, ~3.5s of the 72s run
+const TRAIL_STEPS = 10;     // steps the lit stretch is built from
+const WIDTH = { dim: 0.7, lit: 1 };
+const DIM = '#574a40';
+const LIT = '#ffcf9b';
 const HOVER = '#eafcff';
 
-// Paths still being drawn and finished ones live in separate sources on
-// purpose: the drawing set is small and gets rewritten every frame, while the
-// finished set is large and only changes when a flight lands. One source for
-// all of it would mean re-sending every point of all 168 paths every frame.
+function mixFade(dim, lit) {
+    return ['interpolate', ['linear'], ['get', 'fade'], 0, dim, 1, lit];
+}
+
+// Settled paths and still-fading ones live in separate sources on purpose: the
+// fading set is small and gets rewritten every frame, while the settled set is
+// large and only changes when a path has finished fading.
 function addLayers() {
     for (const key of ['done', 'active']) {
         map.addSource(`flights-${key}`, { type: 'geojson', data: EMPTY, promoteId: 'id' });
@@ -68,19 +85,17 @@ function addLayers() {
             source: `flights-${key}`,
             layout: { 'line-cap': 'butt', 'line-join': 'round' },
             paint: {
-                'line-color': hovered(HOVER, PATH),
+                'line-color': hovered(HOVER, mixFade(DIM, LIT)),
                 'line-width': [
                     'interpolate', ['linear'], ['zoom'],
-                    0, hovered(1.6, 0.5),
-                    3, hovered(2.6, 0.9),
-                    7, hovered(4, 2)
+                    0, hovered(1.6, mixFade(0.5 * WIDTH.dim, 0.5)),
+                    3, hovered(2.6, mixFade(0.9 * WIDTH.dim, 0.9)),
+                    7, hovered(4, mixFade(2 * WIDTH.dim, 2))
                 ]
             }
         });
     }
 
-    // Every one of these flights leaves from the same place, so the origin gets
-    // a marker of its own to anchor the starburst.
     map.addSource('origin', {
         type: 'geojson',
         data: { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: HKG } }
@@ -115,8 +130,10 @@ function addLayers() {
         paint: {
             'circle-radius': ['interpolate', ['linear'], ['zoom'], 0, 1.8, 3, 2.6, 7, 4],
             'circle-color': '#fff6ea',
+            'circle-opacity': ['get', 'fade'],
             'circle-stroke-width': 2,
-            'circle-stroke-color': 'rgba(255,138,61,0.35)'
+            'circle-stroke-color': '#ff8a3d',
+            'circle-stroke-opacity': ['*', ['get', 'fade'], 0.35]
         }
     });
 }
@@ -141,6 +158,8 @@ const ui = {
     replay: document.getElementById('replay')
 };
 
+const details = {};
+
 function animate(data) {
     const flights = data.features.map((feature) => ({
         feature,
@@ -151,11 +170,21 @@ function animate(data) {
         cursor: 0
     }));
 
+    // Everything the popup needs moves into a lookup, so the hundreds of
+    // features rebuilt each frame can carry just an id and a fade. Settled is a
+    // path's resting state, so the stored feature keeps fade 0.
+    for (const flight of flights) {
+        const { id, callsign, maxalt, times } = flight.feature.properties;
+        details[id] = { callsign, maxalt, departure: times[0] };
+        flight.id = id;
+        flight.feature.properties = { id, fade: 0 };
+    }
+
     ui.total.textContent = flights.length;
 
     let waiting;   // not yet departed, latest first so pop() takes the earliest
-    let flying;    // being drawn right now
-    let landed;    // finished, already handed to the static source
+    let flying;    // departed, still carrying some lit trail
+    let landed;    // fully cooled, already handed to the static source
     let startedAt;
     let running = false;
 
@@ -170,40 +199,34 @@ function animate(data) {
         startedAt = performance.now();
     }
 
-    function dot(point) {
+    function dot(point, fade) {
         return {
             type: 'Feature',
-            properties: {},
+            properties: { fade },
             geometry: { type: 'Point', coordinates: [wrapLon(point[0]), point[1]] }
         };
     }
 
-    // The drawn part of a path: every fix reached so far, plus an interpolated
-    // head so the line grows smoothly between fixes rather than snapping from
-    // one sample to the next. The cursor only ever moves forward, so no frame
-    // rescans a track it has already walked.
-    function partial(flight, sim) {
-        const { coords, times } = flight;
-        while (flight.cursor < times.length - 1 && times[flight.cursor + 1] <= sim) {
-            flight.cursor++;
-        }
-        const k = flight.cursor;
-        const drawn = coords.slice(0, k + 1);
+    function piece(flight, coordinates, fade) {
+        return {
+            type: 'Feature',
+            properties: { id: flight.id, fade },
+            geometry: { type: 'LineString', coordinates }
+        };
+    }
 
-        const next = coords[k + 1];
-        if (next) {
-            const t = (sim - times[k]) / (times[k + 1] - times[k]);
-            drawn.push([
-                coords[k][0] + (next[0] - coords[k][0]) * t,
-                coords[k][1] + (next[1] - coords[k][1]) * t
-            ]);
-        }
-        return drawn;
+    // Wraps the drawn part of a path into features the map can take.
+    function trail(flight, sim, lines, planes) {
+        const { pieces, head, headFade } = trailPieces(flight, sim, TRAIL, TRAIL_STEPS);
+        for (const part of pieces) lines.push(piece(flight, part.coordinates, part.fade));
+        planes.push(dot(head, headFade));
     }
 
     function frame(now) {
-        const progress = Math.min((now - startedAt) / DURATION_MS, 1);
-        const sim = progress * data.span;
+        // The clock stops at the last fix, but time keeps running underneath so
+        // the trails still burning at that point can finish cooling.
+        const sim = ((now - startedAt) / DURATION_MS) * data.span;
+        const progress = Math.min(sim / data.span, 1);
 
         while (waiting.length && waiting[waiting.length - 1].start <= sim) {
             flying.push(waiting.pop());
@@ -211,39 +234,35 @@ function animate(data) {
 
         const active = [];
         const planes = [];
-        let anyLanded = false;
+        let airborne = 0;
+        let anySettled = false;
 
         for (let i = flying.length - 1; i >= 0; i--) {
             const flight = flying[i];
-            if (sim >= flight.end) {
+            if (sim - TRAIL >= flight.end) {
                 landed.push(flight.feature);
                 flying.splice(i, 1);
-                anyLanded = true;
+                anySettled = true;
                 continue;
             }
-            const drawn = partial(flight, sim);
-            active.push({
-                type: 'Feature',
-                properties: flight.feature.properties,
-                geometry: { type: 'LineString', coordinates: drawn }
-            });
-            planes.push(dot(drawn[drawn.length - 1]));
+            if (sim < flight.end) airborne++;
+            trail(flight, sim, active, planes);
         }
 
-        if (anyLanded) {
+        if (anySettled) {
             map.getSource('flights-done').setData({ type: 'FeatureCollection', features: landed });
         }
         map.getSource('flights-active').setData({ type: 'FeatureCollection', features: active });
         map.getSource('planes').setData({ type: 'FeatureCollection', features: planes });
 
-        const clock = new Date((data.epoch + sim) * 1000);
+        const clock = new Date((data.epoch + Math.min(sim, data.span)) * 1000);
         ui.clock.textContent = clockFmt.format(clock);
         ui.date.textContent = dateFmt.format(clock);
-        ui.airborne.textContent = flying.length;
+        ui.airborne.textContent = airborne;
         ui.departed.textContent = landed.length + flying.length;
         ui.bar.style.width = `${progress * 100}%`;
 
-        if (progress < 1) {
+        if (progress < 1 || flying.length) {
             requestAnimationFrame(frame);
         } else {
             running = false;
@@ -263,13 +282,9 @@ function animate(data) {
     play();
 }
 
-const depFmt = new Intl.DateTimeFormat('en-GB', { ...hkOpts, hour: '2-digit', minute: '2-digit' });
-
-// Hovering a path lights it and names the flight. Times in the data are
-// seconds from the first departure, so the popup needs the collection's epoch
-// to turn one back into a wall-clock time.
 function wireHover(epoch) {
     const popup = new Popup({ closeButton: false, closeOnClick: false, offset: 8 });
+    const depFmt = new Intl.DateTimeFormat('en-GB', { ...hkOpts, hour: '2-digit', minute: '2-digit' });
     let hover = null;
 
     function clear() {
@@ -288,18 +303,18 @@ function wireHover(epoch) {
                 map.setFeatureState(hover, { hover: true });
             }
 
-            // Properties can come back from the worker with arrays encoded as
-            // JSON strings, so times needs parsing before it can be read.
-            const p = feature.properties;
-            const times = typeof p.times === 'string' ? JSON.parse(p.times) : p.times;
+            // An in-progress path is drawn as many pieces sharing one id, so
+            // hovering any of them lights the whole flight and reads one entry.
+            const flight = details[feature.id];
+            if (!flight) return;
 
             map.getCanvas().style.cursor = 'pointer';
             popup
                 .setLngLat(e.lngLat)
                 .setHTML(
-                    `<strong>${p.callsign || p.id}</strong>` +
-                    `<span>dep ${depFmt.format(new Date((epoch + times[0]) * 1000))} HKT` +
-                    ` &middot; FL${Math.round(p.maxalt / 100)}</span>`
+                    `<strong>${flight.callsign || feature.id}</strong>` +
+                    `<span>dep ${depFmt.format(new Date((epoch + flight.departure) * 1000))} HKT` +
+                    ` &middot; FL${Math.round(flight.maxalt / 100)}</span>`
                 )
                 .addTo(map);
         });
@@ -310,6 +325,7 @@ function wireHover(epoch) {
             popup.remove();
         });
     }
+
 }
 
 // Start the download immediately rather than waiting on the map, and hang the
