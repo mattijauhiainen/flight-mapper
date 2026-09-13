@@ -2,6 +2,10 @@
    for rather than what it is made of. The runs of near-identical navy and grey
    are ramps, and each one is listed darkest to lightest.
 
+   Two colours are the source of everything tinted: --flight-path and --origin.
+   Anything below that carries a hint of either is mixed from it rather than
+   typed out again, so each is written down exactly once.
+
    src/palette.js resolves these for the map layers, which need literal colour
    strings; everything the browser draws uses var() directly. */
 :root {
@@ -17,14 +21,45 @@
   --map-border: #25344a;
   --map-graticule-label: #3c5070;
   --map-label: #59718f;
+
+  /* The ocean at 85%, spelt out rather than mixed: palette.js hands this one
+     straight to MapLibre, which parses colours itself and has never heard of
+     color-mix. */
   --map-label-halo: rgba(7, 12, 22, 0.85);
 
   /* The flights, and the airport all 168 of them leave from: the only warm
      colours on the map, and the two that everything else here is built from.
-     --origin is Hong Kong's halo, --origin-core the dot inside it. */
+     --flight-path-hover is the exception, cold on purpose so a hovered path
+     cannot read as merely a bright one. --origin is Hong Kong's halo,
+     --origin-core the dot inside it. */
   --flight-path: #ffcf9b;
+  --flight-path-hover: #eafcff;
   --origin: #ff8a3d;
   --origin-core: #fff3e4;
+
+  /* Surfaces floating over the map: the flight popup here, the clock panel
+     later. They share one surface so the page reads as one instrument. */
+  --overlay-bg: color-mix(in srgb, var(--map-ocean) 92%, transparent);
+  --overlay-border: color-mix(in srgb, var(--origin) 35%, transparent);
+  --overlay-shadow: rgba(0, 0, 0, 0.45);
+
+  /* Type on those surfaces, brightest to dimmest. */
+  --text: #e9eef6;
+  --text-muted: #9fb0c6;
+
+  /* Type that wants to be noticed takes the colour of a lit flight path, which
+     is what ties the overlays to the map rather than merely near it. */
+  --text-accent: var(--flight-path);
+
+  /* Spacing in fours, and everything on the page measures itself in it. */
+  --space-xs: 4px;
+  --space-s: 8px;
+  --space-m: 12px;
+  --space-l: 16px;
+  --radius-s: 4px;
+  --radius-m: 8px;
+
+  --font-stack: system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 html, body {
@@ -40,4 +75,28 @@ html, body {
 #map {
   position: absolute;
   inset: 0;
+}
+
+.maplibregl-popup-content {
+  padding: var(--space-s) var(--space-m);
+  border-radius: var(--radius-s);
+  background: var(--overlay-bg);
+  border: 1px solid var(--overlay-border);
+  color: var(--text);
+  font: 12px/1.4 var(--font-stack);
+  box-shadow: 0 var(--space-xs) var(--space-m) var(--overlay-shadow);
+}
+
+.maplibregl-popup-content strong {
+  display: block;
+  color: var(--text-accent);
+  letter-spacing: 0.04em;
+}
+
+.maplibregl-popup-content span {
+  color: var(--text-muted);
+}
+
+.maplibregl-popup-tip {
+  display: none;
 }
