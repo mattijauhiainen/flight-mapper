@@ -10,12 +10,21 @@
 <body>
   <div id="map"></div>
   <div id="panel">
-    <h1>Departures from Hong Kong</h1>
+    <h1 class="overlay-title">Departures from Hong Kong</h1>
     <div class="clock"><span id="clock">--:--</span><em id="date">&nbsp;</em></div>
     <p><span id="airborne">0</span> airborne &middot;
        <span id="departed">0</span> of <span id="total">0</span> departed</p>
     <div class="track"><div id="bar"></div></div>
     <button id="replay" hidden>Replay</button>
+  </div>
+  <div id="selection-popup" hidden>
+    <h2 class="overlay-title"><span id="selection-callsign">&nbsp;</span> <em>to</em> <span id="selection-dest"></span></h2>
+    <dl>
+      <div><dt class="arc">Great circle</dt><dd id="selection-direct"></dd></div>
+      <div><dt class="flown">Flown</dt><dd id="selection-flown"></dd></div>
+      <div><dt>Detour</dt><dd id="selection-detour"></dd></div>
+    </dl>
+    <p id="selection-departed"></p>
   </div>
   <script type="module" src="/src/main.ts"></script>
 </body>
