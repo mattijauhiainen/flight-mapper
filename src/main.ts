@@ -4,6 +4,7 @@ import { dimBasemap } from './basemap.ts';
 import { addLayers } from './layers.ts';
 import { animate } from './animate.ts';
 import { wireHover } from './hover.ts';
+import { wireSelect } from './select.ts';
 import type { Tracks } from './tracks.ts';
 
 const map = new Map({
@@ -24,7 +25,8 @@ map.on('style.load', async () => {
     dimBasemap(map);
     const layers = addLayers(map);
     const data = await tracksReady;
-    wireHover(map, data);
+    const muteHover = wireHover(map, data);
+    wireSelect(map, data, layers, muteHover);
     animate(layers, data);
 });
 

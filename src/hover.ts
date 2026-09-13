@@ -1,7 +1,8 @@
 import { Popup } from 'maplibre-gl';
 import type { FeatureIdentifier, Map } from 'maplibre-gl';
 import { PATH_SOURCES, hitLayerId } from './layers.ts';
-import type { FlightProperties, Tracks } from './tracks.ts';
+import { flightsById } from './tracks.ts';
+import type { Tracks } from './tracks.ts';
 
 const depFmt = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Asia/Hong_Kong', hour: '2-digit', minute: '2-digit', hour12: false
@@ -9,14 +10,16 @@ const depFmt = new Intl.DateTimeFormat('en-GB', {
 const kmFmt = new Intl.NumberFormat('en-GB');
 
 // Hovering a path lights it and names the flight: where it was going, when it
-// left, and how far it flew to get there. The features on the map carry only
-// an id, so the rest is looked up in the data by that id.
-export function wireHover(map: Map, data: Tracks): void {
-    const flights: Record<string, FlightProperties | undefined> = {};
-    for (const feature of data.features) flights[feature.properties.id] = feature.properties;
-
+// left, and how far it flew to get there.
+//
+// Returns the switch that mutes one flight. The selected flight is the one case
+// where hovering says nothing: it is lit already and has an overlay of its own
+// anchored to it, saying more than this popup can.
+export function wireHover(map: Map, data: Tracks): (id: string | null) => void {
+    const flights = flightsById(data);
     const popup = new Popup({ closeButton: false, closeOnClick: false, offset: 8 });
     let hover: FeatureIdentifier | null = null;
+    let muted: string | null = null;
 
     function clear() {
         if (hover) map.setFeatureState(hover, { hover: false });
@@ -29,11 +32,16 @@ export function wireHover(map: Map, data: Tracks): void {
         map.on('mousemove', hitLayer, (e) => {
             const feature = e.features?.[0];
             if (!feature) return;
+            map.getCanvas().style.cursor = 'pointer';
 
             // An in-progress path is drawn as many pieces sharing one id, so
             // hovering any of them lights the whole flight and reads one entry.
-            const flight = typeof feature.id === 'string' ? flights[feature.id] : undefined;
-            if (!flight) return;
+            const flight = typeof feature.id === 'string' ? flights[feature.id]?.properties : undefined;
+            if (!flight || feature.id === muted) {
+                clear();
+                popup.remove();
+                return;
+            }
 
             if (!hover || hover.id !== feature.id || hover.source !== source) {
                 clear();
@@ -45,7 +53,6 @@ export function wireHover(map: Map, data: Tracks): void {
             // epoch turns the departure back into a wall-clock time.
             const departure = new Date((data.epoch + flight.times[0]) * 1000);
 
-            map.getCanvas().style.cursor = 'pointer';
             popup
                 .setLngLat(e.lngLat)
                 .setHTML(
@@ -62,4 +69,12 @@ export function wireHover(map: Map, data: Tracks): void {
             popup.remove();
         });
     }
+
+    // Pass the flight to keep quiet about, or null to hear about all of them
+    // again. Either way whatever is showing now goes.
+    return (id) => {
+        muted = id;
+        clear();
+        popup.remove();
+    };
 }
