@@ -17,6 +17,15 @@
     <div class="track"><div id="bar"></div></div>
     <button id="replay" hidden>Replay</button>
   </div>
+  <div id="detail" hidden>
+    <h2><span id="detail-callsign">&nbsp;</span> <em>to</em> <span id="detail-dest"></span></h2>
+    <dl>
+      <div><dt class="arc">Great circle</dt><dd id="detail-direct"></dd></div>
+      <div><dt class="flown">Flown</dt><dd id="detail-flown"></dd></div>
+      <div><dt>Detour</dt><dd id="detail-extra"></dd></div>
+    </dl>
+    <p id="detail-departed"></p>
+  </div>
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>

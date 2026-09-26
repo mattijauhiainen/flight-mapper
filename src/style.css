@@ -29,15 +29,30 @@
 
   /* The flights, and the airport all 168 of them leave from: the only warm
      colours on the map, and the two that everything else here is built from.
-     --flight-path-hover is the exception, cold on purpose so a hovered path
-     cannot read as merely a bright one. --flight-head is the dot riding the
-     leading edge; --origin is Hong Kong's halo, --origin-core the dot inside
-     it. */
+     A path is at --flight-path as the aircraft passes over it and has reached
+     --flight-path-cooled one trail-length later. --flight-path-hover is the
+     exception to the warmth, cold on purpose so a hovered path cannot read as
+     merely a bright one. --flight-head is the dot riding the leading edge;
+     --origin is Hong Kong's halo, --origin-core the dot inside it. */
   --flight-path: #ffcf9b;
+  --flight-path-cooled: #574a40;
   --flight-path-hover: #eafcff;
   --flight-head: #fff6ea;
   --origin: #ff8a3d;
   --origin-core: #fff3e4;
+
+  /* Where a path goes when some other flight is the selected one: the last of
+     the warm ramp, dark enough to drop behind the selection and still light
+     enough to keep the shape of the traffic. */
+  --flight-path-muted: #2e2721;
+
+  /* The shortest path between the two ends of the selected flight, and the
+     airport it lands at. Cold like --flight-path-hover and for the same
+     reason: a dashed line the colour of a flight path would read as one. These
+     are spelt out rather than mixed for the reason --map-label-halo is --
+     palette.js hands them to MapLibre, which has never heard of color-mix. */
+  --geodesic: #58c8e0;
+  --geodesic-core: #e6f9ff;
 
   /* Surfaces floating over the map: the flight popup here, the clock panel
      later. They share one surface so the page reads as one instrument. */
@@ -178,7 +193,113 @@ html, body {
   background: var(--control-bg-hover);
 }
 
-.maplibregl-popup-content {
+/* The selection overlay. It rides the map at the point that was clicked, so it
+   takes the popup surface every other floating thing on this page shares and
+   only sets what a bigger, stay-open panel needs: the clock's type size, room
+   down the right for the close button, and a corner to match it to the clock
+   rather than to the hover popup it is twice the size of. */
+.maplibregl-popup.detail .maplibregl-popup-content {
+  padding: var(--space-m) var(--space-l) var(--space-l);
+  border-radius: var(--radius-m);
+  backdrop-filter: blur(6px);
+}
+
+#detail {
+  width: 200px;
+  color: var(--text);
+  font: 13px/1.45 var(--font-stack);
+}
+
+#detail h2 {
+  margin: 0 var(--space-l) var(--space-s) 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-accent);
+}
+
+#detail h2 em {
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--text-faint);
+}
+
+#detail dl {
+  margin: 0;
+  display: grid;
+  gap: var(--space-xs);
+}
+
+#detail dl div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-s);
+}
+
+#detail dt {
+  color: var(--text-muted);
+}
+
+/* The two rows that name something drawn on the globe carry a scrap of it, so
+   the dashed arc and the flown track can be told apart without a legend. */
+#detail dt.arc::before,
+#detail dt.flown::before {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  margin-right: var(--space-s);
+  vertical-align: middle;
+}
+
+#detail dt.arc::before {
+  border-top: 1px dashed var(--geodesic);
+}
+
+#detail dt.flown::before {
+  border-top: 2px solid var(--flight-path);
+}
+
+#detail dd {
+  margin: 0;
+  color: var(--text-figure);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+#detail #detail-departed {
+  margin: var(--space-m) 0 0;
+  color: var(--text-faint);
+  font-size: 12px;
+}
+
+/* The popup's own close button, which is the usual way out of one. Escape and
+   a click on the map off any path do the same thing. */
+.maplibregl-popup.detail .maplibregl-popup-close-button {
+  top: var(--space-s);
+  right: var(--space-s);
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-s);
+  background: transparent;
+  color: var(--text-faint);
+  font: 16px/1 var(--font-stack);
+  cursor: pointer;
+}
+
+.maplibregl-popup.detail .maplibregl-popup-close-button:hover {
+  background: var(--control-bg);
+  color: var(--text);
+}
+
+/* Qualified by the container on purpose. MapLibre's own stylesheet is imported
+   from main.js, so the bundler injects it after this file and it would win any
+   tie on specificity -- which is how a popup ends up with its stock white
+   background on a night map. */
+.maplibregl-popup .maplibregl-popup-content {
   padding: var(--space-s) var(--space-m);
   border-radius: var(--radius-s);
   background: var(--overlay-bg);
@@ -188,16 +309,16 @@ html, body {
   box-shadow: 0 var(--space-xs) var(--space-m) var(--overlay-shadow);
 }
 
-.maplibregl-popup-content strong {
+.maplibregl-popup .maplibregl-popup-content strong {
   display: block;
   color: var(--text-accent);
   letter-spacing: 0.04em;
 }
 
-.maplibregl-popup-content span {
+.maplibregl-popup .maplibregl-popup-content span {
   color: var(--text-muted);
 }
 
-.maplibregl-popup-tip {
+.maplibregl-popup .maplibregl-popup-tip {
   display: none;
 }
