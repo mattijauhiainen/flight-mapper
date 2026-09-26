@@ -1,7 +1,8 @@
 import { Map, NavigationControl } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { dimBasemap } from './basemap.js';
-import { addFlights } from './flights.js';
+import { addLayers } from './flights.js';
+import { animate } from './animate.js';
 import { wireHover } from './hover.js';
 
 const map = new Map({
@@ -20,8 +21,9 @@ const tracksReady = fetch(`${import.meta.env.BASE_URL}tracks.geojson`).then((r) 
 
 map.on('style.load', async () => {
     dimBasemap(map);
+    addLayers(map);
     const data = await tracksReady;
-    addFlights(map, data);
+    animate(map, data);
     wireHover(map, data.epoch);
 });
 

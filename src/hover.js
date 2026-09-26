@@ -18,33 +18,37 @@ export function wireHover(map, epoch) {
         hover = null;
     }
 
-    map.on('mousemove', 'flights-hit', (e) => {
-        const feature = e.features[0];
-        if (!hover || hover.id !== feature.id) {
+    for (const key of ['done', 'active']) {
+        const source = `flights-${key}`;
+
+        map.on('mousemove', `${source}-hit`, (e) => {
+            const feature = e.features[0];
+            if (!hover || hover.id !== feature.id || hover.source !== source) {
+                clear();
+                hover = { source, id: feature.id };
+                map.setFeatureState(hover, { hover: true });
+            }
+
+            // Properties can come back from the worker with arrays encoded as
+            // JSON strings, so times needs parsing before it can be read.
+            const p = feature.properties;
+            const times = typeof p.times === 'string' ? JSON.parse(p.times) : p.times;
+
+            map.getCanvas().style.cursor = 'pointer';
+            popup
+                .setLngLat(e.lngLat)
+                .setHTML(
+                    `<strong>${p.callsign || p.id} to ${p.dest}</strong>` +
+                    `<span>Dep ${depFmt.format(new Date((epoch + times[0]) * 1000))} HKT` +
+                    ` &middot; ${kmFmt.format(p.km)} km</span>`
+                )
+                .addTo(map);
+        });
+
+        map.on('mouseleave', `${source}-hit`, () => {
             clear();
-            hover = { source: 'flights', id: feature.id };
-            map.setFeatureState(hover, { hover: true });
-        }
-
-        // Properties can come back from the worker with arrays encoded as JSON
-        // strings, so times needs parsing before it can be read.
-        const p = feature.properties;
-        const times = typeof p.times === 'string' ? JSON.parse(p.times) : p.times;
-
-        map.getCanvas().style.cursor = 'pointer';
-        popup
-            .setLngLat(e.lngLat)
-            .setHTML(
-                `<strong>${p.callsign || p.id} to ${p.dest}</strong>` +
-                `<span>Dep ${depFmt.format(new Date((epoch + times[0]) * 1000))} HKT` +
-                ` &middot; ${kmFmt.format(p.km)} km</span>`
-            )
-            .addTo(map);
-    });
-
-    map.on('mouseleave', 'flights-hit', () => {
-        clear();
-        map.getCanvas().style.cursor = '';
-        popup.remove();
-    });
+            map.getCanvas().style.cursor = '';
+            popup.remove();
+        });
+    }
 }
