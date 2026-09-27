@@ -5,6 +5,7 @@ import { addLayers } from './layers.ts';
 import { daylightLayer } from './daylight.ts';
 import { color } from './palette.ts';
 import { animate } from './animate.ts';
+import { HKG, START_ZOOM, clockPace, followDepartures } from './camera.ts';
 import { wireHover } from './hover.ts';
 import { wireSelect } from './select.ts';
 import type { Tracks } from './tracks.ts';
@@ -12,8 +13,8 @@ import type { Tracks } from './tracks.ts';
 const map = new Map({
     container: 'map',
     style: 'https://demotiles.maplibre.org/globe.json',
-    center: [114.17, 22.30],
-    zoom: 2
+    center: HKG,
+    zoom: START_ZOOM
 });
 
 map.addControl(new NavigationControl(), 'top-right');
@@ -40,10 +41,11 @@ map.on('style.load', async () => {
     const daylight = { setTime: (ms: number) => passes.forEach((pass) => pass.setTime(ms)) };
 
     const layers = addLayers(map);
+    const follow = followDepartures(map);
     const data = await tracksReady;
     const muteHover = wireHover(map, data);
     wireSelect(map, data, layers, muteHover);
-    animate(layers, data, daylight);
+    animate(layers, data, daylight, follow, () => clockPace(map));
 });
 
 export { map };
