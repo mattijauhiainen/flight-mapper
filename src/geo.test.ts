@@ -1,7 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { LonLat } from './tracks.ts';
-import { GLOBE_PX, framingZoom, geodesic, greatCircleKm, normalizeLongitude, separation } from './geo.ts';
+import {
+    GLOBE_PX, bearing, edgeZoom, framingZoom, geodesic, globeZoom, greatCircleKm, normalizeLongitude, separation
+} from './geo.ts';
 
 const HKG: LonLat = [113.9185, 22.3089];
 const STEPS = 64;
@@ -151,5 +153,64 @@ test('both ends of a framed arc land inside the viewport', () => {
         const room = Math.min(width, height) / 2;
         assert.ok(offset(arc, lat, zoom) < room, `${deg} degrees at ${lat}N ran off the screen`);
         assert.ok(offset(arc, lat, zoom) > room / 4, `${deg} degrees at ${lat}N left the globe tiny`);
+    }
+});
+
+// Where the camera puts `point` on a screen centred on `center` at `zoom`, as
+// px right of and up from the middle, by the model edgeZoom solves.
+function onScreen(center: LonLat, point: LonLat, zoom: number, height: number): [number, number] {
+    const radius = ((GLOBE_PX / Math.cos(center[1] * (Math.PI / 180))) * 2 ** zoom) / 2;
+    const theta = separation(center, point);
+    const d = 1.5 * height;
+    const r = (radius * Math.sin(theta) * d) / (d + radius * (1 - Math.cos(theta)));
+    const beta = bearing(center, point);
+    return [r * Math.sin(beta), r * Math.cos(beta)];
+}
+
+test('bearing points the way the great circle leaves', () => {
+    close(bearing([0, 0], [10, 0]), Math.PI / 2, 1e-9, 'due east');
+    close(bearing([0, 0], [0, 10]), 0, 1e-9, 'due north');
+    close(bearing([0, 0], [-10, 0]), -Math.PI / 2, 1e-9, 'due west');
+    close(Math.abs(bearing([0, 10], [0, 0])), Math.PI, 1e-9, 'due south');
+    close(bearing(HKG, [237.6, 37.6]), bearing(HKG, [-122.4, 37.6]), 1e-9, 'either turn of the globe');
+});
+
+test('edgeZoom puts a point right on the inset edge it runs towards', () => {
+    const [width, height, inset] = [1200, 800, 24];
+    const points: LonLat[] = [[114.6, 22.3], [116, 24], [121.5, 25], [100.7, 13.7], [139.8, 35.5], [151.2, -33.9]];
+    for (const point of points) {
+        const zoom = edgeZoom(HKG, point, width, height, inset);
+        const [x, y] = onScreen(HKG, point, zoom, height);
+        const slack = Math.min(width / 2 - inset - Math.abs(x), height / 2 - inset - Math.abs(y));
+        close(slack, 0, 1e-6, `${point}`);
+    }
+});
+
+test('edgeZoom lets a point run further along the long side of the screen', () => {
+    const east = edgeZoom(HKG, [124, 22.3], 1200, 800, 24);
+    const north = edgeZoom(HKG, [113.9185, 32.3], 1200, 800, 24);
+    assert.ok(east > north, `east ${east} should hold closer than north ${north}`);
+});
+
+test('edgeZoom pulls back as a point gets further out', () => {
+    const zooms = [0.5, 2, 8, 20, 40].map((deg) => edgeZoom(HKG, [HKG[0] + deg, HKG[1]], 1200, 800, 24));
+    for (let i = 1; i < zooms.length; i++) {
+        assert.ok(zooms[i] < zooms[i - 1], `zoom rose from ${zooms[i - 1]} to ${zooms[i]}`);
+    }
+});
+
+test('edgeZoom asks nothing of a point round the back of the globe', () => {
+    assert.equal(edgeZoom(HKG, [-60, -22.3], 1200, 800, 24), Infinity);
+});
+
+test('globeZoom fits the globe as the camera sees it to the short side', () => {
+    // The camera is 1.5 heights of the viewport above the centre of the screen,
+    // and sees the outline of a ball of radius R from there at R d / sqrt(d^2 + 2dR).
+    for (const [width, height] of [[1200, 800], [800, 1200], [400, 800], [1920, 1080]]) {
+        const zoom = globeZoom(HKG[1], width, height);
+        const radius = ((GLOBE_PX / Math.cos(HKG[1] * (Math.PI / 180))) * 2 ** zoom) / 2;
+        const d = 1.5 * height;
+        const outline = (radius * d) / Math.sqrt(d * d + 2 * d * radius);
+        close(outline, Math.min(width, height) / 2, 1e-9, `outline at ${width}x${height}`);
     }
 });

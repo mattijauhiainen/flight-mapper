@@ -139,3 +139,70 @@ export function framingZoom(arc: number, lat: number, width: number, height: num
     const span = Math.max(Math.sin(arc / 2), 1e-4) * globeDiameter(lat);
     return clamp(Math.log2(Math.min(width, height) / (MARGIN * span)), MIN_ZOOM, MAX_ZOOM);
 }
+
+// MapLibre's camera looks down from 0.5 / tan(fov / 2) heights of the viewport
+// above the centre of the screen, and its fov defaults to 36.87 degrees, whose
+// half has a tangent of exactly a third.
+const CAMERA_HEIGHTS = 1.5;
+
+// Past the point where the whole ball fits across the short side of the screen,
+// zooming out only adds empty space around it: nothing more of the world comes
+// into view. This is as far back as the opening camera ever pulls.
+//
+// Seen from that close, the ball looks a good deal smaller than the diameter
+// the zoom gives it -- a globe exactly as wide as the screen on paper fills only
+// seven tenths of it -- so the fit is solved for the camera. A globe of radius R
+// seen from d above its near side has an outline of R d / sqrt(d^2 + 2 d R) on
+// the screen; setting that to half the short side, h, gives the R below.
+export function globeZoom(lat: number, width: number, height: number): number {
+    const h = Math.min(width, height) / 2;
+    const d = CAMERA_HEIGHTS * height;
+    const radius = (h * h + h * Math.hypot(h, d)) / d;
+    return Math.log2((2 * radius) / globeDiameter(lat));
+}
+
+// Which way b lies from a, as the camera sees it looking straight down on a
+// with north up: radians clockwise from the top of the screen. The globe camera
+// is an azimuthal projection about the centre of the screen, so a point shows
+// on the screen in exactly the direction the great circle leaves for it.
+export function bearing(a: LonLat, b: LonLat): number {
+    const [phi1, phi2] = [a[1] * RAD, b[1] * RAD];
+    const dLambda = (b[0] - a[0]) * RAD;
+    return Math.atan2(
+        Math.sin(dLambda) * Math.cos(phi2),
+        Math.cos(phi1) * Math.sin(phi2) - Math.sin(phi1) * Math.cos(phi2) * Math.cos(dLambda)
+    );
+}
+
+// The closest zoom that keeps `point` inside a viewport centred on `center`,
+// `inset` px in from its edges -- the zoom at which it sits right on that edge.
+//
+// A point theta round the globe from the centre sits R sin(theta) out from the
+// axis and R (1 - cos(theta)) further from the camera than the centre does, so
+// the camera, d above the near side, puts it R sin(theta) d / (d + R (1 -
+// cos(theta))) from the middle of the screen, in the direction of its bearing.
+// Setting that to how far the edge is in that direction and solving for R
+// gives the radius, and so the zoom.
+//
+// Zooming in never pushes a point out past d sin(theta) / (1 - cos(theta)):
+// that is where the horizon sits, and a point that far round never leaves the
+// screen at any zoom, so it asks for none and gets Infinity. So does anything
+// past a quarter of the world, which is round the back of the globe.
+export function edgeZoom(center: LonLat, point: LonLat, width: number, height: number, inset: number): number {
+    const theta = separation(center, point);
+    if (theta >= Math.PI / 2) return Infinity;
+
+    const beta = bearing(center, point);
+    const across = Math.abs(Math.sin(beta));
+    const up = Math.abs(Math.cos(beta));
+    const room = Math.min(
+        across > 1e-9 ? (width / 2 - inset) / across : Infinity,
+        up > 1e-9 ? (height / 2 - inset) / up : Infinity
+    );
+
+    const d = CAMERA_HEIGHTS * height;
+    const below = Math.sin(theta) * d - room * (1 - Math.cos(theta));
+    if (below <= 0) return Infinity;
+
+    return Math.log2((2 * ((room * d) / below)) / globeDiameter(center[1]));
+}
