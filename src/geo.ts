@@ -11,8 +11,8 @@ const EARTH_KM = 6371;   // the mean radius scripts/build_tracks.py measures wit
 // longitudes continue past ±180 the way the tracks' do (see normalizeLongitude),
 // starting from a's.
 export function geodesic(a: LonLat, b: LonLat, steps: number): LonLat[] {
-    const A = toVector(a);
-    const B = toVector(b);
+    const A = lonLatToVector(a);
+    const B = lonLatToVector(b);
     const omega = separation(a, b);
     const sin = Math.sin(omega);
     const points: LonLat[] = [];
@@ -31,7 +31,7 @@ export function geodesic(a: LonLat, b: LonLat, steps: number): LonLat[] {
 
         const first = Math.sin((1 - f) * omega) / sin;
         const second = Math.sin(f * omega) / sin;
-        points.push(toLonLat([
+        points.push(vectorToLonLat([
             A[0] * first + B[0] * second,
             A[1] * first + B[1] * second,
             A[2] * first + B[2] * second
@@ -47,8 +47,8 @@ export function greatCircleKm(a: LonLat, b: LonLat): number {
 
 // The angle between a and b seen from the centre of the earth, in radians.
 export function separation(a: LonLat, b: LonLat): number {
-    const [ax, ay, az] = toVector(a);
-    const [bx, by, bz] = toVector(b);
+    const [ax, ay, az] = lonLatToVector(a);
+    const [bx, by, bz] = lonLatToVector(b);
     return Math.acos(clamp(ax * bx + ay * by + az * bz, -1, 1));
 }
 
@@ -90,20 +90,19 @@ export function normalizeLongitude(lon: number): number {
     return ((((lon + 180) % 360) + 360) % 360) - 180;
 }
 
-// A point on the unit sphere: x through longitude 0 on the equator, y through
-// 90°E on the equator, z through the north pole.
-type Vector = [number, number, number];
+export type Vector = [number, number, number];
 
-// Longitudes past 180 need no normalizing first: sin and cos give the same
-// result for 240 as for -120.
-function toVector([lon, lat]: LonLat): Vector {
+// A point on the unit sphere: x through longitude 0 on the equator, y through
+// 90°E on the equator, z through the north pole. Longitudes past 180 need no
+// normalizing first: sin and cos give the same result for 240 as for -120.
+export function lonLatToVector([lon, lat]: LonLat): Vector {
     const phi = lat * RAD;
     const lambda = lon * RAD;
     const cos = Math.cos(phi);
     return [cos * Math.cos(lambda), cos * Math.sin(lambda), Math.sin(phi)];
 }
 
-function toLonLat([x, y, z]: Vector): LonLat {
+function vectorToLonLat([x, y, z]: Vector): LonLat {
     return [Math.atan2(y, x) / RAD, Math.atan2(z, Math.hypot(x, y)) / RAD];
 }
 
