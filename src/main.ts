@@ -1,8 +1,9 @@
 import { Map, NavigationControl } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { dimBasemap } from './basemap.js';
-import { addFlights } from './flights.js';
-import { wireHover } from './hover.js';
+import { dimBasemap } from './basemap.ts';
+import { addFlights } from './flights.ts';
+import { wireHover } from './hover.ts';
+import type { Tracks } from './tracks.ts';
 
 const map = new Map({
     container: 'map',
@@ -16,7 +17,7 @@ map.addControl(new NavigationControl(), 'top-right');
 // Start the download immediately rather than waiting on the map, and hang the
 // layers off 'style.load' — 'load' also waits for the first basemap tiles,
 // which needlessly delays the tracks on a slow connection.
-const tracksReady = fetch(`${import.meta.env.BASE_URL}tracks.geojson`).then((r) => r.json());
+const tracksReady = fetch(`${import.meta.env.BASE_URL}tracks.geojson`).then((r) => r.json() as Promise<Tracks>);
 
 map.on('style.load', async () => {
     dimBasemap(map);

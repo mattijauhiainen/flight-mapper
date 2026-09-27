@@ -7,7 +7,7 @@
 // module load is enough; each read goes to the stylesheet as it stands.
 const root = getComputedStyle(document.documentElement);
 
-export function color(name) {
+export function color(name: string): string {
     const value = root.getPropertyValue(`--${name}`).trim();
     if (!value) throw new Error(`palette: --${name} is not defined in style.css`);
     return value;
