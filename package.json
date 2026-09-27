@@ -6,13 +6,17 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "typecheck": "tsc"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
   "devDependencies": {
+    "@maplibre/maplibre-gl-style-spec": "^26.4.4",
+    "@types/geojson": "^7946.0.16",
+    "typescript": "^7.0.2",
     "vite": "^8.3.0"
   },
   "dependencies": {

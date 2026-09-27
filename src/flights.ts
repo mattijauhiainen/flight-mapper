@@ -1,10 +1,13 @@
-import { color } from './palette.js';
+import type { ExpressionSpecification } from '@maplibre/maplibre-gl-style-spec';
+import type { Map } from 'maplibre-gl';
+import { color } from './palette.ts';
+import type { Tracks } from './tracks.ts';
 
-export function hovered(yes, no) {
+export function hovered(yes: string | number, no: string | number): ExpressionSpecification {
     return ['case', ['boolean', ['feature-state', 'hover'], false], yes, no];
 }
 
-export function addFlights(map, data) {
+export function addFlights(map: Map, data: Tracks): void {
     map.addSource('flights', { type: 'geojson', data, promoteId: 'id' });
 
     // A path is only 0.5-2px wide, which is a mean thing to ask anyone to

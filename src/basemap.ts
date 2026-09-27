@@ -1,9 +1,10 @@
-import { color } from './palette.js';
+import type { Map } from 'maplibre-gl';
+import { color } from './palette.ts';
 
 // MapLibre's demotiles style is a light pastel political map, and flight paths
 // drawn over it read as noise. This repaints it in the night palette so the
 // tracks carry the colour.
-export function dimBasemap(map) {
+export function dimBasemap(map: Map): void {
     map.setPaintProperty('background', 'background-color', color('map-ocean'));
     map.setPaintProperty('countries-fill', 'fill-color', color('map-land'));
     map.setPaintProperty('crimea-fill', 'fill-color', color('map-land'));

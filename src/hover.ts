@@ -1,4 +1,6 @@
 import { Popup } from 'maplibre-gl';
+import type { FeatureIdentifier, Map } from 'maplibre-gl';
+import { isFlightProperties } from './tracks.ts';
 
 const depFmt = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Asia/Hong_Kong', hour: '2-digit', minute: '2-digit', hour12: false
@@ -9,9 +11,9 @@ const kmFmt = new Intl.NumberFormat('en-GB');
 // left, and how far it flew to get there. Times in the data are seconds from
 // the first departure, so the popup needs the collection's epoch to turn one
 // back into a wall-clock time.
-export function wireHover(map, epoch) {
+export function wireHover(map: Map, epoch: number): void {
     const popup = new Popup({ closeButton: false, closeOnClick: false, offset: 8 });
-    let hover = null;
+    let hover: FeatureIdentifier | null = null;
 
     function clear() {
         if (hover) map.setFeatureState(hover, { hover: false });
@@ -19,7 +21,8 @@ export function wireHover(map, epoch) {
     }
 
     map.on('mousemove', 'flights-hit', (e) => {
-        const feature = e.features[0];
+        const feature = e.features?.[0];
+        if (!feature || !isFlightProperties(feature.properties)) return;
         if (!hover || hover.id !== feature.id) {
             clear();
             hover = { source: 'flights', id: feature.id };
