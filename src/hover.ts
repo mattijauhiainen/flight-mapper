@@ -20,31 +20,35 @@ export function wireHover(map: Map, epoch: number): void {
         hover = null;
     }
 
-    map.on('mousemove', 'flights-hit', (e) => {
-        const feature = e.features?.[0];
-        if (!feature || !isFlightProperties(feature.properties)) return;
-        if (!hover || hover.id !== feature.id) {
+    for (const key of ['done', 'active']) {
+        const source = `flights-${key}`;
+
+        map.on('mousemove', `${source}-hit`, (e) => {
+            const feature = e.features?.[0];
+            if (!feature || !isFlightProperties(feature.properties)) return;
+            if (!hover || hover.id !== feature.id || hover.source !== source) {
+                clear();
+                hover = { source, id: feature.id };
+                map.setFeatureState(hover, { hover: true });
+            }
+
+            const p = feature.properties;
+
+            map.getCanvas().style.cursor = 'pointer';
+            popup
+                .setLngLat(e.lngLat)
+                .setHTML(
+                    `<strong>${p.callsign || p.id} to ${p.dest}</strong>` +
+                    `<span>Dep ${depFmt.format(new Date((epoch + p.times[0]) * 1000))} HKT` +
+                    ` &middot; ${kmFmt.format(p.km)} km</span>`
+                )
+                .addTo(map);
+        });
+
+        map.on('mouseleave', `${source}-hit`, () => {
             clear();
-            hover = { source: 'flights', id: feature.id };
-            map.setFeatureState(hover, { hover: true });
-        }
-
-        const p = feature.properties;
-
-        map.getCanvas().style.cursor = 'pointer';
-        popup
-            .setLngLat(e.lngLat)
-            .setHTML(
-                `<strong>${p.callsign || p.id} to ${p.dest}</strong>` +
-                `<span>Dep ${depFmt.format(new Date((epoch + p.times[0]) * 1000))} HKT` +
-                ` &middot; ${kmFmt.format(p.km)} km</span>`
-            )
-            .addTo(map);
-    });
-
-    map.on('mouseleave', 'flights-hit', () => {
-        clear();
-        map.getCanvas().style.cursor = '';
-        popup.remove();
-    });
+            map.getCanvas().style.cursor = '';
+            popup.remove();
+        });
+    }
 }
