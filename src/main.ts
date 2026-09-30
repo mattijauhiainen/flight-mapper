@@ -1,7 +1,7 @@
 import { Map, NavigationControl } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { dimBasemap } from './basemap.ts';
-import { addLayers } from './flights.ts';
+import { addLayers } from './layers.ts';
 import { animate } from './animate.ts';
 import { wireHover } from './hover.ts';
 import type { Tracks } from './tracks.ts';
@@ -22,10 +22,10 @@ const tracksReady = fetch(`${import.meta.env.BASE_URL}tracks.geojson`).then((r) 
 
 map.on('style.load', async () => {
     dimBasemap(map);
-    addLayers(map);
+    const layers = addLayers(map);
     const data = await tracksReady;
-    animate(map, data);
-    wireHover(map, data.epoch);
+    wireHover(map, data);
+    animate(layers, data);
 });
 
 export { map };

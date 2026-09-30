@@ -1,8 +1,23 @@
-import type { Feature, FeatureCollection, LineString } from 'geojson';
-
 // The shape of public/tracks.geojson, as scripts/build_tracks.py writes it.
 // Times are seconds from `epoch`, the unix time of the first departure, and
 // there is one per vertex of the path.
+//
+// The file is GeoJSON, but these types describe only the part of it this app
+// reads, so the rest of the app can use them without depending on the GeoJSON
+// types that the map code works with.
+export type Tracks = {
+    type: 'FeatureCollection';
+    features: FlightFeature[];
+    epoch: number;
+    span: number;       // seconds from the first departure to the last position recorded
+};
+
+export type FlightFeature = {
+    type: 'Feature';
+    geometry: { type: 'LineString'; coordinates: LonLat[] };
+    properties: FlightProperties;
+};
+
 export type FlightProperties = {
     id: string;
     callsign: string;   // '' when the tracker never saw one
@@ -11,19 +26,7 @@ export type FlightProperties = {
     times: number[];
 };
 
-export type FlightFeature = Feature<LineString, FlightProperties>;
-
-export interface Tracks extends FeatureCollection<LineString, FlightProperties> {
-    epoch: number;
-    span: number;       // seconds from the first departure to the last position recorded
-}
-
-// MapLibre types a rendered feature's properties as any, so a feature handed
-// back by an event is checked before the page trusts it to be a flight.
-export function isFlightProperties(p: Record<string, unknown>): p is FlightProperties {
-    return typeof p.id === 'string'
-        && typeof p.callsign === 'string'
-        && typeof p.dest === 'string'
-        && typeof p.km === 'number'
-        && Array.isArray(p.times);
-}
+// A point on the globe, in degrees. Longitudes on a path that crosses the
+// antimeridian keep counting past 180 rather than wrapping (see
+// normalizeLongitude in layers.ts).
+export type LonLat = [lon: number, lat: number];

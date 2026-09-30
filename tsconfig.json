@@ -4,7 +4,7 @@
         "module": "esnext",
         "moduleResolution": "bundler",
         "lib": ["es2022", "dom", "dom.iterable"],
-        "types": ["vite/client"],
+        "types": ["vite/client", "node"],
 
         // Vite and Node both run the .ts sources as they are, by erasing the
         // types, so tsc only checks. Imports name the .ts file because that is
