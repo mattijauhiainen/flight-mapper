@@ -29,10 +29,12 @@
 
   /* The flights, and the orange the overlays are trimmed in: the only warm
      colours on the page, and the two that everything else here is built from.
-     --flight-path-hover is the exception, cold on purpose so a hovered path
-     cannot read as merely a bright one. --flight-head is the dot riding the
-     leading edge. */
+     A path is at --flight-path as the aircraft passes over it and has reached
+     --flight-path-cooled one trail-length later. --flight-path-hover is the
+     exception to the warmth, cold on purpose so a hovered path cannot read as
+     merely a bright one. --flight-head is the dot riding the leading edge. */
   --flight-path: #ffcf9b;
+  --flight-path-cooled: #574a40;
   --flight-path-hover: #eafcff;
   --flight-head: #fff6ea;
   --accent: #ff8a3d;
