@@ -12,7 +12,9 @@ const DURATION_MS = 72 * 1000;
 // Plays the day's departures on the map. Each frame moves on through the
 // recorded day, draws the timeline as it stands there, and reports the clock to
 // the panel.
-export function animate(layers: FlightLayers, data: Tracks): void {
+//
+// The daylight layer is handed the same instant the clock shows, every frame.
+export function animate(layers: FlightLayers, data: Tracks, daylight: { setTime(ms: number): void }): void {
     let timeline: Timeline;
     let startedAtMs = 0;
     let running = false;
@@ -46,8 +48,10 @@ export function animate(layers: FlightLayers, data: Tracks): void {
         if (moment.settledChanged) layers.drawSettled(moment.settled);
         layers.drawLit(moment.pathsToRender);
 
+        const at = new Date((data.epoch + Math.min(nowSeconds, data.span)) * 1000);
+        daylight.setTime(at.getTime());
         panel.update({
-            at: new Date((data.epoch + Math.min(nowSeconds, data.span)) * 1000),
+            at,
             airborne: moment.airborne,
             departed: moment.departed,
             progress

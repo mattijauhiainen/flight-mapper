@@ -52,6 +52,16 @@
   --geodesic: #58c8e0;
   --geodesic-core: #e6f9ff;
 
+  /* The sea and the land where the sun is high. src/daylight.ts fades the
+     sea to --day-ocean and adds light to --map-land until it reaches
+     --day-land, both rising through dawn. A deep blue sea around graphite
+     land: the day reads at once from the sea, and the land stays dark enough
+     for the flight paths to be the brightest thing on it. Light can only be
+     added, so --day-land needs at least as much of each channel as
+     --map-land (src/daylight.test.ts checks). */
+  --day-ocean: #133a8a;
+  --day-land: #2e3440;
+
   --overlay-bg: color-mix(in srgb, var(--map-ocean) 92%, transparent);
   --overlay-border: color-mix(in srgb, var(--accent) 35%, transparent);
   --overlay-shadow: rgba(0, 0, 0, 0.45);
