@@ -30,14 +30,23 @@
   /* The flights, and the orange the overlays are trimmed in: the only warm
      colours on the page, and the two that everything else here is built from.
      A path is at --flight-path as the aircraft passes over it and has reached
-     --flight-path-cooled one trail-length later. --flight-path-hover is the
-     exception to the warmth, cold on purpose so a hovered path cannot read as
-     merely a bright one. --flight-head is the dot riding the leading edge. */
+     --flight-path-cooled one trail-length later. Hovered and selected paths
+     are drawn at --flight-path too. --flight-head is the dot riding the
+     leading edge. */
   --flight-path: #ffcf9b;
   --flight-path-cooled: #574a40;
-  --flight-path-hover: #eafcff;
   --flight-head: #fff6ea;
   --accent: #ff8a3d;
+
+  /* Paths of the flights that are not selected while one is. The darkest step
+     of the warm ramp. */
+  --flight-path-muted: #2e2721;
+
+  /* The great-circle arc of the selected flight and the dot at its
+     destination. Literal values because palette.ts passes them to MapLibre,
+     which does not support color-mix. */
+  --geodesic: #58c8e0;
+  --geodesic-core: #e6f9ff;
 
   --overlay-bg: color-mix(in srgb, var(--map-ocean) 92%, transparent);
   --overlay-border: color-mix(in srgb, var(--accent) 35%, transparent);
@@ -70,6 +79,14 @@
   --radius-m: 8px;
 
   --font-stack: system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Type scale for the overlays. */
+  --font-size-display: 30px;   /* the clock */
+  --font-size-body: 13px;
+  --font-size-small: 12px;     /* secondary lines and the replay button */
+  --font-size-icon: 16px;      /* the popup close button */
+  --line-height-body: 1.45;
+  --line-height-display: 1.1;
 }
 
 html, body {
@@ -87,27 +104,46 @@ html, body {
   inset: 0;
 }
 
+/* Text in the clock panel and in both popups. */
+#panel,
+.maplibregl-popup .maplibregl-popup-content {
+  color: var(--text);
+  font: var(--font-size-body)/var(--line-height-body) var(--font-stack);
+}
+
+/* Overlay titles: the panel heading and the flight name in both popups. */
+.overlay-title {
+  margin: 0;
+  font-size: var(--font-size-body);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-heading);
+}
+
+/* The "to" between a callsign and its destination. */
+.overlay-title em {
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--text-faint);
+}
+
 #panel {
   position: absolute;
   top: var(--space-l);
   left: var(--space-l);
   z-index: 1;
-  width: 210px;
+  width: 230px;
   padding: var(--space-m) var(--space-l) var(--space-l);
   border-radius: var(--radius-m);
   background: var(--overlay-bg);
   border: 1px solid var(--overlay-border);
   backdrop-filter: blur(6px);
-  color: var(--text);
-  font: 13px/1.45 var(--font-stack);
 }
 
+/* Upper case to match the flight codes in the popup titles. */
 #panel h1 {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: var(--text-heading);
+  text-transform: uppercase;
 }
 
 #panel .clock {
@@ -118,9 +154,9 @@ html, body {
 }
 
 #panel #clock {
-  font-size: 30px;
+  font-size: var(--font-size-display);
   font-weight: 300;
-  line-height: 1.1;
+  line-height: var(--line-height-display);
   color: var(--text-accent);
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
@@ -128,7 +164,7 @@ html, body {
 
 #panel #date {
   font-style: normal;
-  font-size: 12px;
+  font-size: var(--font-size-small);
   color: var(--text-faint);
 }
 
@@ -167,7 +203,7 @@ html, body {
   background: var(--control-bg);
   color: var(--text-accent);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--font-size-small);
   cursor: pointer;
 }
 
@@ -175,26 +211,104 @@ html, body {
   background: var(--control-bg-hover);
 }
 
-.maplibregl-popup-content {
+/* The selection popup (selectionPopup.ts). */
+.maplibregl-popup.selection-popup .maplibregl-popup-content {
+  padding: var(--space-m) var(--space-l) var(--space-l);
+  border-radius: var(--radius-m);
+  backdrop-filter: blur(6px);
+}
+
+#selection-popup {
+  width: 200px;
+}
+
+#selection-popup h2 {
+  margin: 0 var(--space-l) var(--space-s) 0;
+}
+
+#selection-popup dl {
+  margin: 0;
+  display: grid;
+  gap: var(--space-xs);
+}
+
+#selection-popup dl div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-s);
+}
+
+#selection-popup dt {
+  color: var(--text-muted);
+}
+
+/* A short sample of the dashed arc and of the flown track in front of their
+   rows, as a legend. */
+#selection-popup dt.arc::before,
+#selection-popup dt.flown::before {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  margin-right: var(--space-s);
+  vertical-align: middle;
+}
+
+#selection-popup dt.arc::before {
+  border-top: 1px dashed var(--geodesic);
+}
+
+#selection-popup dt.flown::before {
+  border-top: 2px solid var(--flight-path);
+}
+
+#selection-popup dd {
+  margin: 0;
+  color: var(--text-figure);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+#selection-popup #selection-departed {
+  margin: var(--space-m) 0 0;
+  color: var(--text-faint);
+  font-size: var(--font-size-small);
+}
+
+.maplibregl-popup.selection-popup .maplibregl-popup-close-button {
+  top: var(--space-s);
+  right: var(--space-s);
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-s);
+  background: transparent;
+  color: var(--text-faint);
+  font: var(--font-size-icon)/1 var(--font-stack);
+  cursor: pointer;
+}
+
+.maplibregl-popup.selection-popup .maplibregl-popup-close-button:hover {
+  background: var(--control-bg);
+  color: var(--text);
+}
+
+/* Qualified by the container to beat MapLibre's own stylesheet, which the
+   bundler injects after this file and so wins ties on specificity. */
+.maplibregl-popup .maplibregl-popup-content {
   padding: var(--space-s) var(--space-m);
   border-radius: var(--radius-s);
   background: var(--overlay-bg);
   border: 1px solid var(--overlay-border);
-  color: var(--text);
-  font: 12px/1.4 var(--font-stack);
   box-shadow: 0 var(--space-xs) var(--space-m) var(--overlay-shadow);
 }
 
-.maplibregl-popup-content strong {
-  display: block;
-  color: var(--text-accent);
-  letter-spacing: 0.04em;
-}
-
-.maplibregl-popup-content span {
+.hover-popup p {
+  margin: 0;
   color: var(--text-muted);
 }
 
-.maplibregl-popup-tip {
+.maplibregl-popup .maplibregl-popup-tip {
   display: none;
 }

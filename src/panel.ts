@@ -1,8 +1,7 @@
+import { formatHongKongDate, formatHongKongTime } from './format.ts';
+
 // The overlay that reads the timeline back: Hong Kong wall time, how many
 // aircraft are up, and how far through the run we are.
-const hkOpts = { timeZone: 'Asia/Hong_Kong', hour12: false };
-const clockFmt = new Intl.DateTimeFormat('en-GB', { ...hkOpts, hour: '2-digit', minute: '2-digit' });
-const dateFmt = new Intl.DateTimeFormat('en-GB', { ...hkOpts, weekday: 'short', day: 'numeric', month: 'short' });
 
 function byId(id: string): HTMLElement {
     const node = document.getElementById(id);
@@ -32,8 +31,8 @@ export function setTotal(total: number): void {
 }
 
 export function update({ at, airborne, departed, progress }: Reading): void {
-    el.clock.textContent = clockFmt.format(at);
-    el.date.textContent = dateFmt.format(at);
+    el.clock.textContent = formatHongKongTime(at);
+    el.date.textContent = formatHongKongDate(at);
     el.airborne.textContent = String(airborne);
     el.departed.textContent = String(departed);
     el.bar.style.width = `${progress * 100}%`;
