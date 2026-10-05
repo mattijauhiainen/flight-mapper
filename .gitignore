@@ -25,6 +25,9 @@ pnpm-debug.log*
 *.swp
 *~
 
+# Netlify
+.netlify
+
 # Environment
 .env
 .env.*

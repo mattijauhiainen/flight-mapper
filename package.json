@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "deploy": "npm run typecheck && npm run build && netlify deploy --prod --no-build --dir=dist",
     "preview": "vite preview",
     "typecheck": "tsc",
     "test": "node --test"
