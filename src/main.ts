@@ -8,6 +8,7 @@ import { animate } from './animate.ts';
 import { HKG, START_ZOOM, clockPace, followDepartures } from './camera.ts';
 import { wireHover } from './hover.ts';
 import { wireSelect } from './select.ts';
+import { revealWhenDrawn } from './loader.ts';
 import type { Tracks } from './tracks.ts';
 
 const map = new Map({
@@ -20,8 +21,8 @@ const map = new Map({
 map.addControl(new NavigationControl(), 'top-right');
 
 // Start the download immediately rather than waiting on the map, and hang the
-// layers off 'style.load' — 'load' also waits for the first basemap tiles,
-// which needlessly delays the tracks on a slow connection.
+// layers off 'style.load' rather than 'load', so their sources load alongside
+// the first basemap tiles instead of after them.
 const tracksReady = fetch(`${import.meta.env.BASE_URL}tracks.geojson`).then((r) => r.json() as Promise<Tracks>);
 
 map.on('style.load', async () => {
@@ -45,6 +46,7 @@ map.on('style.load', async () => {
     const data = await tracksReady;
     const muteHover = wireHover(map, data);
     wireSelect(map, data, layers, muteHover);
+    await revealWhenDrawn(map);
     animate(layers, data, daylight, follow, () => clockPace(map));
 });
 

@@ -315,3 +315,54 @@ html, body {
 .maplibregl-popup .maplibregl-popup-tip {
   display: none;
 }
+
+/* The full-screen cover shown until the first view is drawn (loader.ts). */
+#loader {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-l);
+  background: var(--map-void);
+  color: var(--text-faint);
+  font: var(--font-size-body)/var(--line-height-body) var(--font-stack);
+  letter-spacing: 0.04em;
+  transition: opacity 400ms ease-out;
+}
+
+body:not(.loading) #loader {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#loader p {
+  margin: 0;
+}
+
+#loader .spinner {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--track-bed);
+  border-top-color: var(--accent);
+  animation: spin 900ms linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(1turn); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #loader .spinner {
+    animation-duration: 3s;
+  }
+}
+
+/* Keeps the overlays out of the tab order while the loader covers them. */
+body.loading #panel,
+body.loading .maplibregl-control-container {
+  visibility: hidden;
+}
