@@ -23,7 +23,10 @@ map.addControl(new NavigationControl(), 'top-right');
 // Start the download immediately rather than waiting on the map, and hang the
 // layers off 'style.load' rather than 'load', so their sources load alongside
 // the first basemap tiles instead of after them.
-const tracksReady = fetch(`${import.meta.env.BASE_URL}tracks.geojson`).then((r) => r.json() as Promise<Tracks>);
+// ?tracks=fr24-2026-09-20 loads public/tracks-fr24-2026-09-20.geojson.
+const tracksSuffix = new URLSearchParams(location.search).get('tracks');
+const tracksFile = tracksSuffix ? `tracks-${tracksSuffix}.geojson` : 'tracks.geojson';
+const tracksReady = fetch(`${import.meta.env.BASE_URL}${tracksFile}`).then((r) => r.json() as Promise<Tracks>);
 
 map.on('style.load', async () => {
     dimBasemap(map);

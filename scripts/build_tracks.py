@@ -13,6 +13,7 @@ Six things happen here that the raw data needs:
   - the flown distance is measured, over the raw fixes rather than the
     simplified ones, so cutting vertices can't shorten the flight
 """
+import argparse
 import csv
 import json
 import glob
@@ -24,9 +25,7 @@ EPS = 0.01        # simplification tolerance in degrees, ~1 km
 PRECISION = 4     # ~11 m, plenty for a globe view
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = os.path.join(ROOT, "data")
-AIRPORTS = os.path.join(SRC, "airports.csv")
-OUT = os.path.join(ROOT, "public", "tracks.geojson")
+AIRPORTS = os.path.join(ROOT, "data", "airports.csv")
 
 EARTH_KM = 6371.0
 
@@ -129,6 +128,13 @@ def destination(airports, lat, lon):
                 return a[0]
     return best[0]
 
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--src", default=os.path.join(ROOT, "data"), help="directory of per-flight JSON files")
+parser.add_argument("--out", default=os.path.join(ROOT, "public", "tracks.geojson"))
+args = parser.parse_args()
+SRC = args.src
+OUT = args.out
 
 airports = load_airports()
 
