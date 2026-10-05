@@ -48,6 +48,9 @@
   --geodesic: #58c8e0;
   --geodesic-core: #e6f9ff;
 
+  --day-ocean: #133a8a;
+  --day-land: #2e3440;
+
   --overlay-bg: color-mix(in srgb, var(--map-ocean) 92%, transparent);
   --overlay-border: color-mix(in srgb, var(--accent) 35%, transparent);
   --overlay-shadow: rgba(0, 0, 0, 0.45);

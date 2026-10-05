@@ -5,6 +5,10 @@ import { color } from './palette.ts';
 // drawn over it read as noise. This repaints it in the night palette so the
 // tracks carry the colour.
 export function dimBasemap(map: Map): void {
+    // Crimea's layer is drawn above the labels, which would leave it above the
+    // daylight too; move it down onto the rest of the land.
+    map.moveLayer('crimea-fill', 'countries-boundary');
+
     map.setPaintProperty('background', 'background-color', color('map-ocean'));
     map.setPaintProperty('countries-fill', 'fill-color', color('map-land'));
     map.setPaintProperty('crimea-fill', 'fill-color', color('map-land'));
