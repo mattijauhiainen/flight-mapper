@@ -7,7 +7,7 @@
   <title>Vector Globe</title>
   <link rel="stylesheet" href="/src/style.css" />
 </head>
-<body>
+<body class="loading">
   <div id="map"></div>
   <div id="panel">
     <h1 class="overlay-title">Departures from Hong Kong</h1>
@@ -25,6 +25,10 @@
       <div><dt>Detour</dt><dd id="selection-detour"></dd></div>
     </dl>
     <p id="selection-departed"></p>
+  </div>
+  <div id="loader" role="status">
+    <div class="spinner"></div>
+    <p>Loading map</p>
   </div>
   <script type="module" src="/src/main.ts"></script>
 </body>
