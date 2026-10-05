@@ -13,7 +13,7 @@ import type { Tracks } from './tracks.ts';
 
 const map = new Map({
     container: 'map',
-    style: 'https://demotiles.maplibre.org/globe.json',
+    style: `${import.meta.env.BASE_URL}basemap.json`,
     center: HKG,
     zoom: START_ZOOM
 });
