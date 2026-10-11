@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Turn the raw fr24 track dumps in data/ into one GeoJSON the browser can load.
+"""Turn the raw fr24 track dumps in data/fr24-hkg-2026-09-20/ into one GeoJSON the browser can load.
 
 Six things happen here that the raw data needs:
   - ground noise is trimmed (each track starts and ends with minutes of taxiing)
@@ -24,8 +24,8 @@ EPS = 0.01        # simplification tolerance in degrees, ~1 km
 PRECISION = 4     # ~11 m, plenty for a globe view
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = os.path.join(ROOT, "data")
-AIRPORTS = os.path.join(SRC, "airports.csv")
+SRC = os.path.join(ROOT, "data", "fr24-hkg-2026-09-20")
+AIRPORTS = os.path.join(ROOT, "data", "airports.csv")
 OUT = os.path.join(ROOT, "public", "tracks.geojson")
 
 EARTH_KM = 6371.0
