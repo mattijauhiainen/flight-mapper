@@ -1,0 +1,24 @@
+[
+    {
+        "id": "hkg",
+        "name": "Hong Kong",
+        "airport": "HKG",
+        "origin": [
+            113.9149,
+            22.3118
+        ],
+        "timeZone": "Asia/Hong_Kong",
+        "timeZoneName": "HKT"
+    },
+    {
+        "id": "ord",
+        "name": "Chicago",
+        "airport": "ORD",
+        "origin": [
+            -87.9048,
+            41.9786
+        ],
+        "timeZone": "America/Chicago",
+        "timeZoneName": "CDT"
+    }
+]

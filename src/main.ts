@@ -23,7 +23,7 @@ map.addControl(new NavigationControl(), 'top-right');
 // Start the download immediately rather than waiting on the map, and hang the
 // layers off 'style.load' rather than 'load', so their sources load alongside
 // the first basemap tiles instead of after them.
-const tracksReady = fetch(`${import.meta.env.BASE_URL}tracks.geojson`).then((r) => r.json() as Promise<Tracks>);
+const tracksReady = fetch(`${import.meta.env.BASE_URL}tracks/hkg.geojson`).then((r) => r.json() as Promise<Tracks>);
 
 map.on('style.load', async () => {
     dimBasemap(map);
