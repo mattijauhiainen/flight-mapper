@@ -4,12 +4,14 @@
 Writes public/tracks/<city>.geojson for every city in CITIES, and
 src/cities.json, which the app bundles to list the cities and place them.
 
-Six things happen here that the raw data needs:
+Seven things happen here that the raw data needs:
   - ground noise is trimmed (each track starts and ends with minutes of taxiing)
   - longitudes are unwrapped past +-180 so trans-Pacific lines don't whip
     back across the globe at the antimeridian
   - the point count is cut with Douglas-Peucker; at globe zoom the raw 16s
     sampling is far more detail than a pixel can show
+  - gaps in receiver coverage, which leave segments of up to thousands of km
+    over oceans and the Arctic, are filled with points along the great circle
   - a timestamp is kept for every surviving vertex, so the client can draw each
     path progressively against a clock
   - the destination is named, by matching the last fix against data/airports.csv
@@ -26,6 +28,10 @@ import zoneinfo
 
 EPS = 0.01        # simplification tolerance in degrees, ~1 km
 PRECISION = 4     # ~11 m, plenty for a globe view
+# Longest segment left in a path. MapLibre draws a segment as a straight line
+# in Mercator, which on the globe bends away from the great circle the aircraft
+# flew; the longer the segment and the nearer the pole, the further.
+MAX_SEGMENT_KM = 300
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AIRPORTS = os.path.join(ROOT, "data", "airports.csv")
@@ -70,6 +76,11 @@ def build_city(city, airports):
 
         points = unwrap([(p["lon"], p["lat"]) for p in tracks])
         kept = simplify(points, EPS)
+        coords, stamps = densify(
+            [points[i] for i in kept],
+            [epoch(tracks[i]["timestamp"]) for i in kept],
+            MAX_SEGMENT_KM,
+        )
 
         # The last raw fix, not the last airborne one: a track that runs to the gate
         # sits on the destination apron, and one that fades out on approach still
@@ -80,8 +91,8 @@ def build_city(city, airports):
         flights.append({
             "id": flight["fr24_id"],
             "callsign": next((p["callsign"] for p in tracks if p["callsign"]), ""),
-            "coords": [[round(points[i][0], PRECISION), round(points[i][1], PRECISION)] for i in kept],
-            "stamps": [epoch(tracks[i]["timestamp"]) for i in kept],
+            "coords": [[round(lon, PRECISION), round(lat, PRECISION)] for lon, lat in coords],
+            "stamps": stamps,
             "dest": iata,
             "km": round(sum(haversine(points[i], points[i + 1]) for i in range(len(points) - 1))),
         })
@@ -179,6 +190,41 @@ def simplify(points, eps):
             stack.append((lo, worst_i))
             stack.append((worst_i, hi))
     return [i for i, k in enumerate(keep) if k]
+
+
+def densify(points, stamps, max_km):
+    """Split every segment longer than max_km into equal parts along the great
+    circle, timing each new point in proportion to its distance along the
+    segment. Longitudes stay unwrapped."""
+    out_points = [points[0]]
+    out_stamps = [stamps[0]]
+    for i in range(1, len(points)):
+        a, b = points[i - 1], points[i]
+        parts = math.ceil(haversine(a, b) / max_km)
+        for part in range(1, parts):
+            fraction = part / parts
+            lon, lat = great_circle_point(a, b, fraction)
+            lon += 360 * round((out_points[-1][0] - lon) / 360)
+            out_points.append((lon, lat))
+            out_stamps.append(stamps[i - 1] + (stamps[i] - stamps[i - 1]) * fraction)
+        out_points.append(b)
+        out_stamps.append(stamps[i])
+    return out_points, out_stamps
+
+
+def great_circle_point(a, b, fraction):
+    """The (lon, lat) `fraction` of the way from a to b along the great circle."""
+    va, vb = unit_vector(a), unit_vector(b)
+    angle = math.acos(max(-1.0, min(1.0, sum(x * y for x, y in zip(va, vb)))))
+    weight_a = math.sin((1 - fraction) * angle) / math.sin(angle)
+    weight_b = math.sin(fraction * angle) / math.sin(angle)
+    x, y, z = (weight_a * p + weight_b * q for p, q in zip(va, vb))
+    return math.degrees(math.atan2(y, x)), math.degrees(math.atan2(z, math.hypot(x, y)))
+
+
+def unit_vector(point):
+    lon, lat = map(math.radians, point)
+    return (math.cos(lat) * math.cos(lon), math.cos(lat) * math.sin(lon), math.sin(lat))
 
 
 def airborne(tracks):
