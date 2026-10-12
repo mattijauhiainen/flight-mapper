@@ -6,14 +6,14 @@ import { daylightLayer } from './daylight.ts';
 import { color } from './palette.ts';
 import { animate } from './animate.ts';
 import { START_ZOOM, clockPace, followDepartures } from './camera.ts';
-import { CITIES } from './cities.ts';
+import { cityFromUrl, showCity } from './cities.ts';
 import { wireHover } from './hover.ts';
 import { wireSelect } from './select.ts';
 import { revealWhenDrawn } from './loader.ts';
 import * as panel from './panel.ts';
 import type { Tracks } from './tracks.ts';
 
-const city = CITIES[0];
+const city = cityFromUrl();
 
 const map = new Map({
     container: 'map',
@@ -51,6 +51,7 @@ map.on('style.load', async () => {
     const muteHover = wireHover(map, data, city);
     wireSelect(map, data, city, layers, muteHover);
     panel.setCity(city);
+    panel.onCityChange(showCity);
     await revealWhenDrawn(map);
     animate(layers, data, daylight, follow, () => clockPace(map));
 });
