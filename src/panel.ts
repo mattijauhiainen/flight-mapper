@@ -1,3 +1,4 @@
+import { CITIES } from './cities.ts';
 import type { City } from './cities.ts';
 import { formatDate, formatTime } from './format.ts';
 
@@ -11,7 +12,7 @@ function byId(id: string): HTMLElement {
 }
 
 const el = {
-    title: byId('title'),
+    city: byId('city') as HTMLSelectElement,
     clock: byId('clock'),
     date: byId('date'),
     airborne: byId('airborne'),
@@ -30,10 +31,15 @@ export type Reading = {
 
 let timeZone = 'UTC';
 
-// Names the city in the title and sets the time zone the clock reads in.
+// Selects the city in the title and sets the time zone the clock reads in.
 export function setCity(city: City): void {
-    el.title.textContent = `Departures from ${city.name}`;
+    el.city.replaceChildren(...CITIES.map(({ id, name }) => new Option(name, id, false, id === city.id)));
     timeZone = city.timeZone;
+}
+
+// `handler` gets the id of the city picked in the title.
+export function onCityChange(handler: (id: string) => void): void {
+    el.city.addEventListener('change', () => handler(el.city.value));
 }
 
 export function setTotal(total: number): void {

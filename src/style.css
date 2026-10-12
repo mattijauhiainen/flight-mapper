@@ -149,6 +149,27 @@ html, body {
   text-transform: uppercase;
 }
 
+/* The city in the title, picked from a drop-down. */
+#panel #city {
+  appearance: none;
+  padding: 0;
+  border: none;
+  border-bottom: 1px dashed var(--accent);
+  border-radius: 0;
+  background: none;
+  color: var(--text-accent);
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+#panel #city option {
+  background: var(--map-ocean);
+  color: var(--text);
+  text-transform: none;
+}
+
 #panel .clock {
   display: flex;
   align-items: baseline;
