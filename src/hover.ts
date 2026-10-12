@@ -1,6 +1,7 @@
 import { Popup } from 'maplibre-gl';
 import type { FeatureIdentifier, Map } from 'maplibre-gl';
-import { formatHongKongTime, formatKm } from './format.ts';
+import type { City } from './cities.ts';
+import { formatKm, formatTime } from './format.ts';
 import { PATH_SOURCES, hitLayerId } from './layers.ts';
 import { flightsById } from './tracks.ts';
 import type { Tracks } from './tracks.ts';
@@ -10,7 +11,7 @@ import type { Tracks } from './tracks.ts';
 //
 // Returns a function that mutes hover for one flight, used for the selected
 // flight, which has the selection popup instead.
-export function wireHover(map: Map, data: Tracks): (id: string | null) => void {
+export function wireHover(map: Map, data: Tracks, city: City): (id: string | null) => void {
     const flights = flightsById(data);
     const popup = new Popup({ className: 'hover-popup', closeButton: false, closeOnClick: false, offset: 8 });
     let hover: FeatureIdentifier | null = null;
@@ -52,7 +53,7 @@ export function wireHover(map: Map, data: Tracks): (id: string | null) => void {
                 .setLngLat(e.lngLat)
                 .setHTML(
                     `<h2 class="overlay-title">${flight.callsign || flight.id} <em>to</em> ${flight.dest}</h2>` +
-                    `<p>Dep ${formatHongKongTime(departure)} HKT &middot; ${formatKm(flight.km)}</p>`
+                    `<p>Dep ${formatTime(departure, city.timeZone)} ${city.timeZoneName} &middot; ${formatKm(flight.km)}</p>`
                 )
                 .addTo(map);
         });

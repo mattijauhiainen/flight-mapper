@@ -1,6 +1,7 @@
 import { Popup } from 'maplibre-gl';
 import type { LngLatLike, Map } from 'maplibre-gl';
-import { formatHongKongTime, formatKm, formatPercent } from './format.ts';
+import type { City } from './cities.ts';
+import { formatKm, formatPercent, formatTime } from './format.ts';
 
 // The popup that opens when a path is clicked. It names the selected flight
 // and compares the distance it flew with the great-circle distance between its
@@ -16,7 +17,9 @@ export type MeasuredFlight = {
     departure: Date;
 };
 
-export function show(map: Map, at: LngLatLike, flight: MeasuredFlight): void {
+// `city` is the one the flight departed from; the departure time is in its time
+// zone.
+export function show(map: Map, at: LngLatLike, flight: MeasuredFlight, city: City): void {
     const { id, callsign, dest, flownKm, directKm, departure } = flight;
     const detourKm = Math.max(flownKm - directKm, 0);
 
@@ -25,7 +28,7 @@ export function show(map: Map, at: LngLatLike, flight: MeasuredFlight): void {
     el.direct.textContent = formatKm(directKm);
     el.flown.textContent = formatKm(flownKm);
     el.detour.textContent = `+${formatKm(detourKm)} · +${formatPercent((detourKm / directKm) * 100)}`;
-    el.departed.textContent = `Departed ${formatHongKongTime(departure)} HKT`;
+    el.departed.textContent = `Departed ${formatTime(departure, city.timeZone)} ${city.timeZoneName}`;
 
     // If the popup is already open, only move it. addTo() on an open popup
     // removes it first, which fires 'close', and select.ts clears the selection

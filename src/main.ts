@@ -5,16 +5,20 @@ import { addLayers } from './layers.ts';
 import { daylightLayer } from './daylight.ts';
 import { color } from './palette.ts';
 import { animate } from './animate.ts';
-import { HKG, START_ZOOM, clockPace, followDepartures } from './camera.ts';
+import { START_ZOOM, clockPace, followDepartures } from './camera.ts';
+import { CITIES } from './cities.ts';
 import { wireHover } from './hover.ts';
 import { wireSelect } from './select.ts';
 import { revealWhenDrawn } from './loader.ts';
+import * as panel from './panel.ts';
 import type { Tracks } from './tracks.ts';
+
+const city = CITIES[0];
 
 const map = new Map({
     container: 'map',
     style: 'https://demotiles.maplibre.org/globe.json',
-    center: HKG,
+    center: city.origin,
     zoom: START_ZOOM
 });
 
@@ -23,7 +27,7 @@ map.addControl(new NavigationControl(), 'top-right');
 // Start the download immediately rather than waiting on the map, and hang the
 // layers off 'style.load' rather than 'load', so their sources load alongside
 // the first basemap tiles instead of after them.
-const tracksReady = fetch(`${import.meta.env.BASE_URL}tracks/hkg.geojson`).then((r) => r.json() as Promise<Tracks>);
+const tracksReady = fetch(`${import.meta.env.BASE_URL}tracks/${city.id}.geojson`).then((r) => r.json() as Promise<Tracks>);
 
 map.on('style.load', async () => {
     dimBasemap(map);
@@ -42,10 +46,11 @@ map.on('style.load', async () => {
     const daylight = { setTime: (ms: number) => passes.forEach((pass) => pass.setTime(ms)) };
 
     const layers = addLayers(map);
-    const follow = followDepartures(map);
+    const follow = followDepartures(map, city.origin);
     const data = await tracksReady;
-    const muteHover = wireHover(map, data);
-    wireSelect(map, data, layers, muteHover);
+    const muteHover = wireHover(map, data, city);
+    wireSelect(map, data, city, layers, muteHover);
+    panel.setCity(city);
     await revealWhenDrawn(map);
     animate(layers, data, daylight, follow, () => clockPace(map));
 });
