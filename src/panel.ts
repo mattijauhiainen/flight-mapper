@@ -1,6 +1,7 @@
-import { formatHongKongDate, formatHongKongTime } from './format.ts';
+import type { City } from './cities.ts';
+import { formatDate, formatTime } from './format.ts';
 
-// The overlay that reads the timeline back: Hong Kong wall time, how many
+// The overlay that reads the timeline back: the city's wall time, how many
 // aircraft are up, and how far through the run we are.
 
 function byId(id: string): HTMLElement {
@@ -10,6 +11,7 @@ function byId(id: string): HTMLElement {
 }
 
 const el = {
+    title: byId('title'),
     clock: byId('clock'),
     date: byId('date'),
     airborne: byId('airborne'),
@@ -26,13 +28,21 @@ export type Reading = {
     progress: number;   // 0..1 through the run
 };
 
+let timeZone = 'UTC';
+
+// Names the city in the title and sets the time zone the clock reads in.
+export function setCity(city: City): void {
+    el.title.textContent = `Departures from ${city.name}`;
+    timeZone = city.timeZone;
+}
+
 export function setTotal(total: number): void {
     el.total.textContent = String(total);
 }
 
 export function update({ at, airborne, departed, progress }: Reading): void {
-    el.clock.textContent = formatHongKongTime(at);
-    el.date.textContent = formatHongKongDate(at);
+    el.clock.textContent = formatTime(at, timeZone);
+    el.date.textContent = formatDate(at, timeZone);
     el.airborne.textContent = String(airborne);
     el.departed.textContent = String(departed);
     el.bar.style.width = `${progress * 100}%`;

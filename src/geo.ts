@@ -24,7 +24,7 @@ export function geodesic(a: LonLat, b: LonLat, steps: number): LonLat[] {
             // a and b are the same point or opposite each other, and the
             // formula below would divide by zero. A straight line is close
             // enough for the first case; no destination in the data is near
-            // opposite Hong Kong.
+            // opposite the airport it departed from.
             points.push([a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]);
             continue;
         }

@@ -1,4 +1,5 @@
 import type { LngLat, Map } from 'maplibre-gl';
+import type { City } from './cities.ts';
 import * as selectionPopup from './selectionPopup.ts';
 import { framingZoom, geodesic, greatCircleKm, normalizeLongitude, separation } from './geo.ts';
 import { PATH_SOURCES, hitLayerId } from './layers.ts';
@@ -21,6 +22,7 @@ const TURN_MS = 1400;
 export function wireSelect(
     map: Map,
     data: Tracks,
+    city: City,
     layers: FlightLayers,
     muteHover: (id: string | null) => void
 ): void {
@@ -76,7 +78,7 @@ export function wireSelect(
             flownKm: km,
             directKm: greatCircleKm(from, to),
             departure: new Date((data.epoch + times[0]) * 1000)
-        });
+        }, city);
 
         zoomIntoView(arc);
     }

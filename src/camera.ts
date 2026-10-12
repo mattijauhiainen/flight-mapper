@@ -2,12 +2,9 @@ import type { Map, MapLibreEvent } from 'maplibre-gl';
 import { edgeZoom, globeZoom } from './geo.ts';
 import type { LonLat } from './tracks.ts';
 
-// Hong Kong International, where every flight in the data departs from.
-export const HKG: LonLat = [113.9185, 22.3089];
-
-// The run opens close in on Hong Kong, where the first departures are, and the
-// camera backs away as the traffic spreads out -- centred on the airport the
-// whole time, so the starburst grows out of the middle of the screen.
+// The run opens close in on the airport, where the first departures are, and
+// the camera backs away as the traffic spreads out -- centred on the airport
+// the whole time, so the starburst grows out of the middle of the screen.
 export const START_ZOOM = 8;
 
 // How close to the edge of the screen an aircraft gets before it pushes the
@@ -29,7 +26,7 @@ export const PACE = 0.75;
 // It stops for good as soon as the viewer takes the camera -- a drag, a wheel,
 // a pinch, a key or the zoom buttons -- or once the whole globe is in view and
 // there is nothing further out to show.
-export function followDepartures(map: Map): (aircraftPositions: LonLat[]) => void {
+export function followDepartures(map: Map, origin: LonLat): (aircraftPositions: LonLat[]) => void {
     let zoom = START_ZOOM;
     let following = true;
 
@@ -56,13 +53,13 @@ export function followDepartures(map: Map): (aircraftPositions: LonLat[]) => voi
         if (!following) return;
 
         const { clientWidth, clientHeight } = map.getContainer();
-        const wholeGlobeZoom = globeZoom(HKG[1], clientWidth, clientHeight);
+        const wholeGlobeZoom = globeZoom(origin[1], clientWidth, clientHeight);
         for (const position of aircraftPositions) {
-            zoom = Math.min(zoom, edgeZoom(HKG, position, clientWidth, clientHeight, INSET));
+            zoom = Math.min(zoom, edgeZoom(origin, position, clientWidth, clientHeight, INSET));
         }
         zoom = Math.max(zoom, wholeGlobeZoom);
 
-        map.jumpTo({ center: HKG, zoom });
+        map.jumpTo({ center: origin, zoom });
 
         if (zoom <= wholeGlobeZoom) release();
     };
