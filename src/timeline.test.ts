@@ -65,3 +65,23 @@ test('a new timeline starts from the beginning', () => {
     assert.deepEqual(moment.settled, []);
     assert.deepEqual(moment.pathsToRender[0].pathToRender.aircraftPosition, [5, 0]);
 });
+
+test('momentAt goes backwards through the day', () => {
+    const timeline = startTimeline(day());
+    timeline.advanceTo(trailLengths(4));
+
+    let moment = timeline.momentAt(trailLengths(2.5));
+    assert.deepEqual(litIds(moment.pathsToRender), ['late']);
+    assert.deepEqual(litIds(moment.settled), ['early']);
+    assert.equal(moment.settledChanged, true);
+    assert.equal(moment.departed, 2);
+
+    moment = timeline.momentAt(trailLengths(2.2));
+    assert.equal(moment.settledChanged, false);
+
+    moment = timeline.momentAt(trailLengths(0.5));
+    assert.deepEqual(litIds(moment.pathsToRender), ['early']);
+    assert.deepEqual(moment.settled, []);
+    assert.equal(moment.settledChanged, true);
+    assert.deepEqual(moment.pathsToRender[0].pathToRender.aircraftPosition, [5, 0]);
+});

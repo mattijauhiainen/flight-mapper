@@ -144,6 +144,7 @@ def build_city(city, airports):
         "origin": [origin[2], origin[1]],
         "timeZone": city["time_zone"],
         "timeZoneName": zone_name(start),
+        "firstDepartureMs": round(t0) * 1000,
     }
 
 
