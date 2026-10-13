@@ -48,6 +48,8 @@ CITIES = [
      "time_zone": "Asia/Hong_Kong", "tracks": "fr24-hkg-2026-09-20"},
     {"id": "ord", "name": "Chicago", "airport": "ORD",
      "time_zone": "America/Chicago", "tracks": "fr24-ord-2026-09-20"},
+    {"id": "gru", "name": "São Paulo", "airport": "GRU",
+     "time_zone": "America/Sao_Paulo", "tracks": "fr24-gru-2026-09-20"},
 ]
 
 
@@ -56,7 +58,7 @@ def main():
     os.makedirs(TRACKS_OUT, exist_ok=True)
     cities = [build_city(city, airports) for city in CITIES]
     with open(CITIES_OUT, "w") as fh:
-        json.dump(cities, fh, indent=4)
+        json.dump(cities, fh, indent=4, ensure_ascii=False)
         fh.write("\n")
 
 
@@ -129,7 +131,7 @@ def build_city(city, airports):
 
     kept = sum(len(f["geometry"]["coordinates"]) for f in features)
     print(f"{city['id']}: {len(features)} flights, {raw_points} -> {kept} points ({kept / raw_points:.1%})")
-    print(f"timeline {start:%Y-%m-%d %H:%M} -> {end:%Y-%m-%d %H:%M} {start.tzname()} "
+    print(f"timeline {start:%Y-%m-%d %H:%M} -> {end:%Y-%m-%d %H:%M} {zone_name(start)} "
           f"({(t1 - t0) / 3600:.1f} h)")
     print(f"{os.path.getsize(out) / 1e6:.2f} MB")
 
@@ -139,8 +141,7 @@ def build_city(city, airports):
         "airport": city["airport"],
         "origin": [origin[2], origin[1]],
         "timeZone": city["time_zone"],
-        # The zone's abbreviation at the first departure, e.g. "HKT" or "CDT".
-        "timeZoneName": start.tzname(),
+        "timeZoneName": zone_name(start),
     }
 
 
@@ -276,6 +277,16 @@ def destination(airports, lat, lon):
             if a[3]:
                 return a[0]
     return best[0]
+
+
+def zone_name(moment):
+    """The abbreviation of the moment's time zone, e.g. "HKT" or "CDT", or its
+    offset from UTC, e.g. "UTC-3", for zones without one."""
+    name = moment.tzname()
+    if name[0] not in "+-":
+        return name
+    hours, minutes = divmod(abs(moment.utcoffset()).seconds // 60, 60)
+    return f"UTC{name[0]}{hours}" + (f":{minutes:02}" if minutes else "")
 
 
 if __name__ == "__main__":
