@@ -136,7 +136,7 @@ html, body {
   top: var(--space-l);
   left: var(--space-l);
   z-index: 1;
-  width: 230px;
+  width: 250px;
   padding: var(--space-m) var(--space-l) var(--space-l);
   border-radius: var(--radius-m);
   background: var(--overlay-bg);
@@ -147,6 +147,52 @@ html, body {
 /* Upper case to match the flight codes in the popup titles. */
 #panel h1 {
   text-transform: uppercase;
+}
+
+/* The city in the title and a caret after it. The select that picks the city
+   lies invisibly on top, so clicks and keys open it. A select is as wide as its
+   longest option, which would leave a gap before a caret drawn after it. */
+#panel .city-picker {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-s);
+  color: var(--text-accent);
+  white-space: nowrap;
+}
+
+#panel .city-picker::after {
+  content: '';
+  width: 0.35em;
+  height: 0.35em;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: translateY(-0.15em) rotate(45deg);
+}
+
+#panel .city-picker:hover {
+  color: var(--flight-head);
+}
+
+#panel .city-picker:has(#city:focus-visible) {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-s);
+}
+
+#panel #city {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+#panel #city option {
+  background: var(--map-ocean);
+  color: var(--text);
+  text-transform: none;
 }
 
 #panel .clock {

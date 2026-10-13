@@ -57,7 +57,7 @@ const EMPTY: FeatureCollection = { type: 'FeatureCollection', features: [] };
 // where it is 0, and at full width down to DIM_WIDTH of it. Hover and selection
 // override both.
 //
-// The colours are opaque. With transparency, overlapping paths near Hong Kong
+// The colours are opaque. With transparency, overlapping paths near the airport
 // would add up and look brighter than a single path.
 const DIM_WIDTH = 0.7;     // how much of the lit width a cooled path keeps
 const MUTED_WIDTH = 0.45;  // how much of the lit width an unselected path keeps
