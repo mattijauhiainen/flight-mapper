@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Turn the raw fr24 track dumps in data/fr24-hkg-2026-09-20/ into one GeoJSON the browser can load.
+"""Turn each city's raw fr24 track dumps in data/ into a GeoJSON the browser can load.
+
+Writes public/tracks/<city>.geojson for every city in CITIES, and
+src/cities.json, which the app bundles to list the cities and place them.
 
 Seven things happen here that the raw data needs:
   - ground noise is trimmed (each track starts and ends with minutes of taxiing)
@@ -21,6 +24,7 @@ import glob
 import math
 import os
 import datetime
+import zoneinfo
 
 EPS = 0.01        # simplification tolerance in degrees, ~1 km
 PRECISION = 4     # ~11 m, plenty for a globe view
@@ -30,11 +34,114 @@ PRECISION = 4     # ~11 m, plenty for a globe view
 MAX_SEGMENT_KM = 300
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = os.path.join(ROOT, "data", "fr24-hkg-2026-09-20")
 AIRPORTS = os.path.join(ROOT, "data", "airports.csv")
-OUT = os.path.join(ROOT, "public", "tracks.geojson")
+TRACKS_OUT = os.path.join(ROOT, "public", "tracks")
+CITIES_OUT = os.path.join(ROOT, "src", "cities.json")
 
 EARTH_KM = 6371.0
+
+# The cities the app can show, in the order the selector lists them. The first
+# is the default. `tracks` is the directory under data/ that fetch_fr24.py
+# downloaded the departures into.
+CITIES = [
+    {"id": "hkg", "name": "Hong Kong", "airport": "HKG",
+     "time_zone": "Asia/Hong_Kong", "tracks": "fr24-hkg-2026-09-20"},
+    {"id": "ord", "name": "Chicago", "airport": "ORD",
+     "time_zone": "America/Chicago", "tracks": "fr24-ord-2026-09-20"},
+]
+
+
+def main():
+    airports = load_airports()
+    os.makedirs(TRACKS_OUT, exist_ok=True)
+    cities = [build_city(city, airports) for city in CITIES]
+    with open(CITIES_OUT, "w") as fh:
+        json.dump(cities, fh, indent=4)
+        fh.write("\n")
+
+
+def build_city(city, airports):
+    """Writes the city's tracks and returns its entry for src/cities.json."""
+    out = os.path.join(TRACKS_OUT, f"{city['id']}.geojson")
+    origin = next(a for a in airports if a[0] == city["airport"])
+
+    flights = []
+    raw_points = 0
+    for path in sorted(glob.glob(os.path.join(ROOT, "data", city["tracks"], "*.json"))):
+        flight = json.load(open(path))[0]
+        tracks = airborne(flight["tracks"])
+        if len(tracks) < 2:
+            continue
+        raw_points += len(tracks)
+
+        points = unwrap([(p["lon"], p["lat"]) for p in tracks])
+        kept = simplify(points, EPS)
+        coords, stamps = densify(
+            [points[i] for i in kept],
+            [epoch(tracks[i]["timestamp"]) for i in kept],
+            MAX_SEGMENT_KM,
+        )
+
+        # The last raw fix, not the last airborne one: a track that runs to the gate
+        # sits on the destination apron, and one that fades out on approach still
+        # points at it.
+        end = flight["tracks"][-1]
+        iata = destination(airports, end["lat"], end["lon"])
+
+        flights.append({
+            "id": flight["fr24_id"],
+            "callsign": next((p["callsign"] for p in tracks if p["callsign"]), ""),
+            "coords": [[round(lon, PRECISION), round(lat, PRECISION)] for lon, lat in coords],
+            "stamps": stamps,
+            "dest": iata,
+            "km": round(sum(haversine(points[i], points[i + 1]) for i in range(len(points) - 1))),
+        })
+
+    # Times ship as whole seconds from the first departure, which keeps them short
+    # and lets the client treat the animation as one continuous timeline.
+    t0 = min(f["stamps"][0] for f in flights)
+    t1 = max(f["stamps"][-1] for f in flights)
+    flights.sort(key=lambda f: f["stamps"][0])
+
+    features = [{
+        "type": "Feature",
+        "properties": {
+            "id": f["id"],
+            "callsign": f["callsign"],
+            "dest": f["dest"],
+            "km": f["km"],
+            "times": [round(s - t0) for s in f["stamps"]],
+        },
+        "geometry": {"type": "LineString", "coordinates": f["coords"]},
+    } for f in flights]
+
+    zone = zoneinfo.ZoneInfo(city["time_zone"])
+    start = datetime.datetime.fromtimestamp(t0, zone)
+    end = datetime.datetime.fromtimestamp(t1, zone)
+
+    with open(out, "w") as fh:
+        json.dump({
+            "type": "FeatureCollection",
+            "epoch": round(t0),
+            "span": round(t1 - t0),
+            "features": features,
+        }, fh, separators=(",", ":"))
+
+    kept = sum(len(f["geometry"]["coordinates"]) for f in features)
+    print(f"{city['id']}: {len(features)} flights, {raw_points} -> {kept} points ({kept / raw_points:.1%})")
+    print(f"timeline {start:%Y-%m-%d %H:%M} -> {end:%Y-%m-%d %H:%M} {start.tzname()} "
+          f"({(t1 - t0) / 3600:.1f} h)")
+    print(f"{os.path.getsize(out) / 1e6:.2f} MB")
+
+    return {
+        "id": city["id"],
+        "name": city["name"],
+        "airport": city["airport"],
+        "origin": [origin[2], origin[1]],
+        "timeZone": city["time_zone"],
+        # The zone's abbreviation at the first departure, e.g. "HKT" or "CDT".
+        "timeZoneName": start.tzname(),
+    }
 
 
 def unwrap(points):
@@ -171,70 +278,5 @@ def destination(airports, lat, lon):
     return best[0]
 
 
-airports = load_airports()
-
-flights = []
-raw_points = 0
-for path in sorted(glob.glob(os.path.join(SRC, "*.json"))):
-    flight = json.load(open(path))[0]
-    tracks = airborne(flight["tracks"])
-    if len(tracks) < 2:
-        continue
-    raw_points += len(tracks)
-
-    points = unwrap([(p["lon"], p["lat"]) for p in tracks])
-    kept = simplify(points, EPS)
-    coords, stamps = densify(
-        [points[i] for i in kept],
-        [epoch(tracks[i]["timestamp"]) for i in kept],
-        MAX_SEGMENT_KM,
-    )
-
-    # The last raw fix, not the last airborne one: a track that runs to the gate
-    # sits on the destination apron, and one that fades out on approach still
-    # points at it.
-    end = flight["tracks"][-1]
-    iata = destination(airports, end["lat"], end["lon"])
-
-    flights.append({
-        "id": flight["fr24_id"],
-        "callsign": next((p["callsign"] for p in tracks if p["callsign"]), ""),
-        "coords": [[round(lon, PRECISION), round(lat, PRECISION)] for lon, lat in coords],
-        "stamps": stamps,
-        "dest": iata,
-        "km": round(sum(haversine(points[i], points[i + 1]) for i in range(len(points) - 1))),
-    })
-
-# Times ship as whole seconds from the first departure, which keeps them short
-# and lets the client treat the animation as one continuous timeline.
-t0 = min(f["stamps"][0] for f in flights)
-t1 = max(f["stamps"][-1] for f in flights)
-flights.sort(key=lambda f: f["stamps"][0])
-
-features = [{
-    "type": "Feature",
-    "properties": {
-        "id": f["id"],
-        "callsign": f["callsign"],
-        "dest": f["dest"],
-        "km": f["km"],
-        "times": [round(s - t0) for s in f["stamps"]],
-    },
-    "geometry": {"type": "LineString", "coordinates": f["coords"]},
-} for f in flights]
-
-with open(OUT, "w") as fh:
-    json.dump({
-        "type": "FeatureCollection",
-        "epoch": round(t0),
-        "span": round(t1 - t0),
-        "features": features,
-    }, fh, separators=(",", ":"))
-
-kept = sum(len(f["geometry"]["coordinates"]) for f in features)
-hk = datetime.timezone(datetime.timedelta(hours=8))
-print(f"{len(features)} flights, {raw_points} -> {kept} points ({kept / raw_points:.1%})")
-print(f"timeline {datetime.datetime.fromtimestamp(t0, hk):%Y-%m-%d %H:%M} -> "
-      f"{datetime.datetime.fromtimestamp(t1, hk):%Y-%m-%d %H:%M} HKT "
-      f"({(t1 - t0) / 3600:.1f} h)")
-print(f"{os.path.getsize(OUT) / 1e6:.2f} MB")
+if __name__ == "__main__":
+    main()

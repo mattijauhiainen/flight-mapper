@@ -21,7 +21,7 @@ FR24TOKEN=... scripts/fetch_fr24.py --airport HKG --since 2026-09-19T16:00Z \
     --until 2026-09-20T16:00Z --categories P --out data/fr24-hkg-2026-09-20
 ```
 
-Build `public/tracks.geojson` from the downloaded tracks:
+Add the city to `CITIES` in `scripts/build_tracks.py`, then build `public/tracks/<city>.geojson` and `src/cities.json`:
 
 ```bash
 scripts/build_tracks.py
