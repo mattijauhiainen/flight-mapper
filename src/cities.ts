@@ -10,6 +10,7 @@ export type City = {
     origin: LonLat;         // where that airport is
     timeZone: string;       // IANA time zone, e.g. 'Asia/Hong_Kong'
     timeZoneName: string;   // its abbreviation on the day of the data, e.g. 'HKT'
+    epoch: number;          // unix time of the first departure, as in its tracks
 };
 
 // In the order the city selector lists them. The first is the default.
@@ -22,9 +23,10 @@ export function cityFromUrl(): City {
     return CITIES.find((city) => city.id === id) ?? CITIES[0];
 }
 
-// Loads the page again showing `id`.
-export function showCity(id: string): void {
+// Puts `city` in the page's ?city= parameter, in place of the current history
+// entry.
+export function putCityInUrl(city: City): void {
     const url = new URL(location.href);
-    url.searchParams.set('city', id);
-    location.assign(url);
+    url.searchParams.set('city', city.id);
+    history.replaceState(null, '', url);
 }

@@ -25,18 +25,16 @@ const el = {
 
 export type Reading = {
     at: Date;           // the simulated wall-clock time
+    timeZone: string;   // the one the clock reads in
     airborne: number;
     departed: number;   // including those that have since landed
     progress: number;   // 0..1 through the run
 };
 
-let timeZone = 'UTC';
-
-// Selects the city in the title and sets the time zone the clock reads in.
+// Selects the city in the title.
 export function setCity(city: City): void {
     el.cityName.textContent = city.name;
     el.city.replaceChildren(...CITIES.map(({ id, name }) => new Option(name, id, false, id === city.id)));
-    timeZone = city.timeZone;
 }
 
 // `handler` gets the id of the city picked in the title.
@@ -48,7 +46,7 @@ export function setTotal(total: number): void {
     el.total.textContent = String(total);
 }
 
-export function update({ at, airborne, departed, progress }: Reading): void {
+export function update({ at, timeZone, airborne, departed, progress }: Reading): void {
     el.clock.textContent = formatTime(at, timeZone);
     el.date.textContent = formatDate(at, timeZone);
     el.airborne.textContent = String(airborne);

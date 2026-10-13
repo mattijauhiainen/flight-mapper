@@ -8,7 +8,8 @@
             22.3118
         ],
         "timeZone": "Asia/Hong_Kong",
-        "timeZoneName": "HKT"
+        "timeZoneName": "HKT",
+        "epoch": 1789835029
     },
     {
         "id": "ord",
@@ -19,7 +20,8 @@
             41.9786
         ],
         "timeZone": "America/Chicago",
-        "timeZoneName": "CDT"
+        "timeZoneName": "CDT",
+        "epoch": 1789881502
     },
     {
         "id": "gru",
@@ -30,7 +32,8 @@
             -23.4313
         ],
         "timeZone": "America/Sao_Paulo",
-        "timeZoneName": "UTC-3"
+        "timeZoneName": "UTC-3",
+        "epoch": 1789873318
     },
     {
         "id": "hel",
@@ -41,6 +44,7 @@
             60.3184
         ],
         "timeZone": "Europe/Helsinki",
-        "timeZoneName": "EEST"
+        "timeZoneName": "EEST",
+        "epoch": 1789852546
     }
 ]
