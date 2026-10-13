@@ -31,5 +31,16 @@
         ],
         "timeZone": "America/Sao_Paulo",
         "timeZoneName": "UTC-3"
+    },
+    {
+        "id": "hel",
+        "name": "Helsinki",
+        "airport": "HEL",
+        "origin": [
+            24.9633,
+            60.3184
+        ],
+        "timeZone": "Europe/Helsinki",
+        "timeZoneName": "EEST"
     }
 ]

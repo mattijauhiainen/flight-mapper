@@ -50,6 +50,8 @@ CITIES = [
      "time_zone": "America/Chicago", "tracks": "fr24-ord-2026-09-20"},
     {"id": "gru", "name": "São Paulo", "airport": "GRU",
      "time_zone": "America/Sao_Paulo", "tracks": "fr24-gru-2026-09-20"},
+    {"id": "hel", "name": "Helsinki", "airport": "HEL",
+     "time_zone": "Europe/Helsinki", "tracks": "fr24-hel-2026-09-20"},
 ]
 
 
