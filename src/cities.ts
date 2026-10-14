@@ -11,9 +11,10 @@ export type City = {
     timeZone: string;       // IANA time zone, e.g. 'Asia/Hong_Kong'
     timeZoneName: string;   // its abbreviation on the day of the data, e.g. 'HKT'
     epoch: number;          // unix time of the first departure, as in its tracks
+    departures: number;     // flights in its tracks
 };
 
-// In the order the city selector lists them. The first is the default.
+// In the order the city picker lists them. The first is the default.
 export const CITIES = cities as City[];
 
 // The city named by the page's ?city= parameter, or the first city when there

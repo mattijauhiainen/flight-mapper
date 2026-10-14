@@ -145,6 +145,7 @@ def build_city(city, airports):
         "timeZone": city["time_zone"],
         "timeZoneName": zone_name(start),
         "epoch": round(t0),
+        "departures": len(features),
     }
 
 

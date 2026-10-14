@@ -9,7 +9,8 @@
         ],
         "timeZone": "Asia/Hong_Kong",
         "timeZoneName": "HKT",
-        "epoch": 1789835029
+        "epoch": 1789835029,
+        "departures": 422
     },
     {
         "id": "ord",
@@ -21,7 +22,8 @@
         ],
         "timeZone": "America/Chicago",
         "timeZoneName": "CDT",
-        "epoch": 1789881502
+        "epoch": 1789881502,
+        "departures": 1326
     },
     {
         "id": "gru",
@@ -33,7 +35,8 @@
         ],
         "timeZone": "America/Sao_Paulo",
         "timeZoneName": "UTC-3",
-        "epoch": 1789873318
+        "epoch": 1789873318,
+        "departures": 391
     },
     {
         "id": "hel",
@@ -45,6 +48,7 @@
         ],
         "timeZone": "Europe/Helsinki",
         "timeZoneName": "EEST",
-        "epoch": 1789852546
+        "epoch": 1789852546,
+        "departures": 222
     }
 ]

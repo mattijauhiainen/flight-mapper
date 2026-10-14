@@ -149,50 +149,112 @@ html, body {
   text-transform: uppercase;
 }
 
-/* The city in the title and a caret after it. The select that picks the city
-   lies invisibly on top, so clicks and keys open it. A select is as wide as its
-   longest option, which would leave a gap before a caret drawn after it. */
-#panel .city-picker {
-  position: relative;
+/* The city in the title, with a caret after it, opens the city picker. */
+#panel #city-name {
   display: inline-flex;
   align-items: center;
   gap: var(--space-s);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-s);
+  background: none;
   color: var(--text-accent);
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
   white-space: nowrap;
+  cursor: pointer;
 }
 
-#panel .city-picker::after {
+#panel #city-name::after {
   content: '';
   width: 0.35em;
   height: 0.35em;
   border-right: 1.5px solid currentColor;
   border-bottom: 1.5px solid currentColor;
   transform: translateY(-0.15em) rotate(45deg);
+  transition: transform 0.15s;
 }
 
-#panel .city-picker:hover {
+#panel #city-name:hover {
   color: var(--flight-head);
 }
 
-#panel .city-picker:has(#city:focus-visible) {
+#panel #city-name:focus-visible {
   outline: 1px solid var(--accent);
   outline-offset: 2px;
-  border-radius: var(--radius-s);
 }
 
-#panel #city {
-  position: absolute;
-  inset: 0;
+#panel:has(#cities:popover-open) #city-name::after {
+  transform: translateY(0.1em) rotate(225deg);
+}
+
+/* The city picker. panel.ts places it under the title. */
+#cities {
+  box-sizing: border-box;
+  margin: 0;
+  max-width: calc(100vw - 2 * var(--space-l));
+  padding: var(--space-xs);
+  border-radius: var(--radius-m);
+  background: var(--overlay-bg);
+  border: 1px solid var(--overlay-border);
+  box-shadow: 0 8px 24px var(--overlay-shadow);
+  backdrop-filter: blur(6px);
+  color: var(--text);
+  font: var(--font-size-body)/var(--line-height-body) var(--font-stack);
+}
+
+#cities ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#cities button {
+  display: grid;
+  grid-template-columns: 1fr auto;
   width: 100%;
-  opacity: 0;
+  padding: var(--space-s) var(--space-m);
+  border: 0;
+  border-radius: var(--radius-s);
+  background: none;
+  color: inherit;
   font: inherit;
+  text-align: left;
   cursor: pointer;
 }
 
-#panel #city option {
-  background: var(--map-ocean);
-  color: var(--text);
-  text-transform: none;
+#cities button:hover,
+#cities button:focus-visible {
+  background: var(--control-bg-hover);
+  outline: none;
+}
+
+#cities button[aria-current] {
+  background: var(--control-bg);
+  cursor: default;
+}
+
+#cities .name {
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+#cities button[aria-current] .name {
+  color: var(--text-accent);
+}
+
+#cities .airport {
+  font-size: var(--font-size-small);
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+}
+
+#cities .day {
+  grid-column: 1 / -1;
+  font-size: var(--font-size-small);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 #panel .clock {
