@@ -10,6 +10,11 @@ export function formatDate(date: Date, timeZone: string): string {
     return dateTimeFormat(timeZone, 'date').format(date);
 }
 
+// "1,326"
+export function formatCount(count: number): string {
+    return wholeNumber.format(count);
+}
+
 // "11,045 km"
 export function formatKm(km: number): string {
     return `${wholeNumber.format(km)} km`;

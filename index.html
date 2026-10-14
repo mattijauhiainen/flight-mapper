@@ -10,7 +10,10 @@
 <body class="loading">
   <div id="map"></div>
   <div id="panel">
-    <h1 class="overlay-title">Departures from <span class="city-picker"><span id="city-name">&nbsp;</span><select id="city" aria-label="City"></select></span></h1>
+    <h1 class="overlay-title">Departures from <button id="city-name" popovertarget="cities" aria-haspopup="true">&nbsp;</button></h1>
+    <div id="cities" popover>
+      <ul id="city-list" aria-label="Cities"></ul>
+    </div>
     <div class="clock"><span id="clock">--:--</span><em id="date">&nbsp;</em></div>
     <p><span id="airborne">0</span> airborne &middot;
        <span id="departed">0</span> of <span id="total">0</span> departed</p>
