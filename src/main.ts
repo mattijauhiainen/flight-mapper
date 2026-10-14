@@ -56,6 +56,7 @@ map.on('style.load', async () => {
     const player = startPlayer(layers, daylight, () => clockPace(map));
     panel.setCity(city);
     panel.onCityChange(switchCity);
+    panel.onCitiesOpen(() => CITIES.forEach(loadDay));
     await revealWhenDrawn(map);
     player.play(day, followDepartures(map, city.origin));
 

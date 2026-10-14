@@ -9,7 +9,8 @@
         ],
         "timeZone": "Asia/Hong_Kong",
         "timeZoneName": "HKT",
-        "firstDepartureMs": 1789835029000
+        "firstDepartureMs": 1789835029000,
+        "departures": 422
     },
     {
         "id": "ord",
@@ -21,7 +22,8 @@
         ],
         "timeZone": "America/Chicago",
         "timeZoneName": "CDT",
-        "firstDepartureMs": 1789881502000
+        "firstDepartureMs": 1789881502000,
+        "departures": 1326
     },
     {
         "id": "gru",
@@ -33,7 +35,8 @@
         ],
         "timeZone": "America/Sao_Paulo",
         "timeZoneName": "UTC-3",
-        "firstDepartureMs": 1789873318000
+        "firstDepartureMs": 1789873318000,
+        "departures": 391
     },
     {
         "id": "hel",
@@ -45,6 +48,7 @@
         ],
         "timeZone": "Europe/Helsinki",
         "timeZoneName": "EEST",
-        "firstDepartureMs": 1789852546000
+        "firstDepartureMs": 1789852546000,
+        "departures": 222
     }
 ]
