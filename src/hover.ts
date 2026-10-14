@@ -1,18 +1,18 @@
 import { Popup } from 'maplibre-gl';
 import type { FeatureIdentifier, Map } from 'maplibre-gl';
-import type { City } from './cities.ts';
+import type { Day } from './day.ts';
 import { formatKm, formatTime } from './format.ts';
 import { PATH_SOURCES, hitLayerId } from './layers.ts';
-import { flightsById } from './tracks.ts';
-import type { Tracks } from './tracks.ts';
 
 // Hovering a path lights it and names the flight: where it was going, when it
 // left, and how far it flew to get there.
 //
+// `currentDay` gives the day on the map, which changes when another city is
+// picked.
+//
 // Returns a function that mutes hover for one flight, used for the selected
 // flight, which has the selection popup instead.
-export function wireHover(map: Map, data: Tracks, city: City): (id: string | null) => void {
-    const flights = flightsById(data);
+export function wireHover(map: Map, currentDay: () => Day): (id: string | null) => void {
     const popup = new Popup({ className: 'hover-popup', closeButton: false, closeOnClick: false, offset: 8 });
     let hover: FeatureIdentifier | null = null;
     let muted: string | null = null;
@@ -32,6 +32,7 @@ export function wireHover(map: Map, data: Tracks, city: City): (id: string | nul
 
             // An in-progress path is drawn as many pieces sharing one id, so
             // hovering any of them lights the whole flight and reads one entry.
+            const { city, data, flights } = currentDay();
             const flight = typeof feature.id === 'string' ? flights[feature.id]?.properties : undefined;
             if (!flight || feature.id === muted) {
                 clear();

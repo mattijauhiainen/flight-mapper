@@ -28,6 +28,7 @@ export type Moment = {
 
 export type Timeline = {
     advanceTo(nowSeconds: number): Moment;
+    momentAt(nowSeconds: number): Moment;
 };
 
 // A lit flight and where pathToRenderAt's next search along its path starts.
@@ -45,7 +46,9 @@ type LitFlight = {
 // aircraft.
 //
 // advanceTo only moves forward: each call carries on from where the previous
-// one left off. To go back to the start, start a new timeline.
+// one left off. To go back to the start, start a new timeline. momentAt works
+// a moment out afresh, so it can go backwards too, and leaves advanceTo where
+// it was.
 export function startTimeline(data: Tracks): Timeline {
     // In order of departure, so the next flight to take off is always at
     // flights[nextToDepart].
@@ -54,8 +57,9 @@ export function startTimeline(data: Tracks): Timeline {
     let nextToDepart = 0;
     let lit: LitFlight[] = [];
     const settled: Flight[] = [];
+    let settledCountAtLastMoment = -1;
 
-    return { advanceTo };
+    return { advanceTo, momentAt };
 
     function advanceTo(nowSeconds: number): Moment {
         takeOff(nowSeconds);
@@ -66,6 +70,24 @@ export function startTimeline(data: Tracks): Timeline {
             settledChanged,
             airborne: lit.filter(({ flight }) => flight.arrivalSeconds > nowSeconds).length,
             departed: nextToDepart
+        };
+    }
+
+    // The settled flights at one moment are always the same set for the same
+    // count, since a flight that has settled stays settled as time goes on.
+    function momentAt(nowSeconds: number): Moment {
+        const cooled = (flight: Flight) => flight.arrivalSeconds + COOLS_AFTER_SECONDS <= nowSeconds;
+        const departed = flights.filter((flight) => flight.departureSeconds <= nowSeconds);
+        const settledNow = departed.filter(cooled);
+        const litNow = departed.filter((flight) => !cooled(flight));
+        const settledChanged = settledNow.length !== settledCountAtLastMoment;
+        settledCountAtLastMoment = settledNow.length;
+        return {
+            pathsToRender: litNow.map((flight) => ({ id: flight.id, pathToRender: pathToRenderAt(flight.path, nowSeconds).pathToRender })),
+            settled: settledNow,
+            settledChanged,
+            airborne: litNow.filter((flight) => flight.arrivalSeconds > nowSeconds).length,
+            departed: departed.length
         };
     }
 

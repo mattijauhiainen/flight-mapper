@@ -65,6 +65,34 @@ export function followDepartures(map: Map, origin: LonLat): (aircraftPositions: 
     };
 }
 
+// Flies the camera over `durationMs` to `origin`, as close in as a run starts.
+//
+// Returns a function that stops watching the camera and says whether the
+// viewer took it in the meantime.
+export function flyToCity(map: Map, origin: LonLat, durationMs: number): () => boolean {
+    let taken = false;
+    const take = () => {
+        taken = true;
+    };
+    const takeIfViewer = (e: MapLibreEvent<unknown>) => {
+        if (e.originalEvent) take();
+    };
+
+    map.on('mousedown', take);
+    map.on('touchstart', take);
+    map.on('wheel', take);
+    map.on('movestart', takeIfViewer);
+    map.flyTo({ center: origin, zoom: START_ZOOM, duration: durationMs });
+
+    return () => {
+        map.off('mousedown', take);
+        map.off('touchstart', take);
+        map.off('wheel', take);
+        map.off('movestart', takeIfViewer);
+        return taken;
+    };
+}
+
 // How fast the clock runs at the map's current zoom, as a fraction of full
 // speed.
 export function clockPace(map: Map): number {
