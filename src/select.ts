@@ -1,12 +1,11 @@
 import type { LngLat, Map } from 'maplibre-gl';
-import type { City } from './cities.ts';
+import type { Day } from './day.ts';
 import * as selectionPopup from './selectionPopup.ts';
 import { framingZoom, geodesic, greatCircleKm, normalizeLongitude, separation } from './geo.ts';
 import { PATH_SOURCES, hitLayerId } from './layers.ts';
 import type { FlightLayers } from './layers.ts';
 import * as panel from './panel.ts';
-import { flightsById } from './tracks.ts';
-import type { LonLat, Tracks } from './tracks.ts';
+import type { LonLat } from './tracks.ts';
 
 // Enough segments for the arc to look curved at any zoom. Even, so the halfway
 // point is a vertex the camera can centre on.
@@ -18,15 +17,16 @@ const TURN_MS = 1400;
 
 // Clicking a path selects its flight: the other flights are dimmed, the
 // great-circle arc between its two ends is drawn, the camera turns to show both
-// ends, and the selection popup opens at the clicked point.
+// ends, and the selection popup opens at the clicked point. `currentDay` gives
+// the day on the map.
+//
+// Returns a function that clears the selection.
 export function wireSelect(
     map: Map,
-    data: Tracks,
-    city: City,
+    currentDay: () => Day,
     layers: FlightLayers,
     muteHover: (id: string | null) => void
-): void {
-    const flights = flightsById(data);
+): () => void {
     const hitLayers = PATH_SOURCES.map(hitLayerId);
     let selected: string | null = null;
 
@@ -55,6 +55,7 @@ export function wireSelect(
     // Selecting the flight that is already selected runs all of this again,
     // which moves the camera back and the popup to the new click.
     function select(id: string, at: LngLat) {
+        const { city, data, flights } = currentDay();
         const flight = flights[id];
         if (!flight) return;
         const { callsign, dest, km, times } = flight.properties;
@@ -100,4 +101,5 @@ export function wireSelect(
     });
     selectionPopup.onClose(clear);
     panel.onReplay(clear);
+    return clear;
 }

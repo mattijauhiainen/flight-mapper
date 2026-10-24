@@ -4,14 +4,18 @@ import { dimBasemap } from './basemap.ts';
 import { addLayers } from './layers.ts';
 import { daylightLayer } from './daylight.ts';
 import { color } from './palette.ts';
-import { animate } from './animate.ts';
-import { START_ZOOM, clockPace, followDepartures } from './camera.ts';
-import { cityFromUrl, showCity } from './cities.ts';
+import { startPlayer } from './animate.ts';
+import { START_ZOOM, clockPace, flyToCity, followDepartures } from './camera.ts';
+import { CITIES, cityFromUrl, putCityInUrl } from './cities.ts';
+import { loadDay } from './day.ts';
 import { wireHover } from './hover.ts';
 import { wireSelect } from './select.ts';
 import { revealWhenDrawn } from './loader.ts';
 import * as panel from './panel.ts';
-import type { Tracks } from './tracks.ts';
+
+// How long the trip to another city takes: the camera's flight there and the
+// rewind of the day on the map.
+const SWITCH_MS = 4000;
 
 const city = cityFromUrl();
 
@@ -27,7 +31,7 @@ map.addControl(new NavigationControl(), 'top-right');
 // Start the download immediately rather than waiting on the map, and hang the
 // layers off 'style.load' rather than 'load', so their sources load alongside
 // the first basemap tiles instead of after them.
-const tracksReady = fetch(`${import.meta.env.BASE_URL}tracks/${city.id}.geojson`).then((r) => r.json() as Promise<Tracks>);
+const firstDay = loadDay(city);
 
 map.on('style.load', async () => {
     dimBasemap(map);
@@ -46,14 +50,38 @@ map.on('style.load', async () => {
     const daylight = { setTime: (ms: number) => passes.forEach((pass) => pass.setTime(ms)) };
 
     const layers = addLayers(map);
-    const follow = followDepartures(map, city.origin);
-    const data = await tracksReady;
-    const muteHover = wireHover(map, data, city);
-    wireSelect(map, data, city, layers, muteHover);
+    let day = await firstDay;
+    const muteHover = wireHover(map, () => day);
+    const clearSelection = wireSelect(map, () => day, layers, muteHover);
+    const player = startPlayer(layers, daylight, () => clockPace(map));
     panel.setCity(city);
-    panel.onCityChange(showCity);
+    panel.onCityChange(switchCity);
     await revealWhenDrawn(map);
-    animate(layers, data, daylight, follow, () => clockPace(map));
+    player.play(day, followDepartures(map, city.origin));
+
+    // Picking a city flies the camera there while the day on the map runs
+    // backwards, and plays the new city's day once both are done and its
+    // tracks are in. A city picked on the way takes over from wherever the
+    // clock has got to.
+    let latestSwitch = 0;
+    async function switchCity(id: string) {
+        const next = CITIES.find((city) => city.id === id);
+        if (!next) return;
+        const thisSwitch = ++latestSwitch;
+        putCityInUrl(next);
+        panel.setCity(next);
+        clearSelection();
+        const nextDay = loadDay(next);
+        const flight = flyToCity(map, next.origin, SWITCH_MS);
+        await player.rewind(SWITCH_MS, next.firstDepartureMs);
+        const loaded = await nextDay;
+        flight.stopWatching();
+        // Another city was picked while this one was rewinding or loading.
+        // That switch plays its own day, so this one stops here.
+        if (thisSwitch !== latestSwitch) return;
+        day = loaded;
+        player.play(day, flight.viewerTookCamera() ? () => {} : followDepartures(map, next.origin));
+    }
 });
 
 export { map };
