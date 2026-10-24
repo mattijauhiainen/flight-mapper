@@ -1,6 +1,6 @@
 import { CITIES } from './cities.ts';
 import type { City } from './cities.ts';
-import { formatDate, formatTime } from './format.ts';
+import { formatCount, formatDate, formatTime } from './format.ts';
 
 // The overlay that reads the timeline back: the city's wall time, how many
 // aircraft are up, and how far through the run we are.
@@ -12,8 +12,10 @@ function byId(id: string): HTMLElement {
 }
 
 const el = {
+    panel: byId('panel'),
     cityName: byId('city-name'),
-    city: byId('city') as HTMLSelectElement,
+    cities: byId('cities'),
+    cityList: byId('city-list'),
     clock: byId('clock'),
     date: byId('date'),
     airborne: byId('airborne'),
@@ -31,15 +33,27 @@ export type Reading = {
     progress: number;   // 0..1 through the run
 };
 
-// Selects the city in the title.
+// Names the city in the title and marks it in the city picker.
 export function setCity(city: City): void {
     el.cityName.textContent = city.name;
-    el.city.replaceChildren(...CITIES.map(({ id, name }) => new Option(name, id, false, id === city.id)));
+    el.cityList.replaceChildren(...CITIES.map((each) => cityRow(each, each.id === city.id)));
 }
 
-// `handler` gets the id of the city picked in the title.
+// `handler` gets the id of the city picked. Picking one closes the picker.
 export function onCityChange(handler: (id: string) => void): void {
-    el.city.addEventListener('change', () => handler(el.city.value));
+    el.cityList.addEventListener('click', (e) => {
+        const row = (e.target as Element).closest<HTMLButtonElement>('button[data-city]');
+        if (!row?.dataset.city || row.disabled) return;
+        el.cities.hidePopover();
+        handler(row.dataset.city);
+    });
+}
+
+// `handler` runs every time the city picker opens.
+export function onCitiesOpen(handler: () => void): void {
+    el.cities.addEventListener('toggle', (e) => {
+        if ((e as ToggleEvent).newState === 'open') handler();
+    });
 }
 
 export function setTotal(total: number): void {
@@ -61,3 +75,39 @@ export function offerReplay(show: boolean): void {
 export function onReplay(handler: () => void): void {
     el.replay.addEventListener('click', handler);
 }
+
+// One city in the picker: its name and airport, and the day of departures it
+// has. The city on the map is marked and cannot be picked.
+function cityRow(city: City, current: boolean): HTMLLIElement {
+    const row = document.createElement('button');
+    row.dataset.city = city.id;
+    row.disabled = current;
+    if (current) row.setAttribute('aria-current', 'true');
+    const date = formatDate(new Date(city.firstDepartureMs), city.timeZone);
+    row.append(
+        span('name', city.name),
+        span('airport', city.airport),
+        span('day', `${date} · ${formatCount(city.departures)} departures`)
+    );
+
+    const item = document.createElement('li');
+    item.append(row);
+    return item;
+}
+
+function span(className: string, text: string): HTMLSpanElement {
+    const node = document.createElement('span');
+    node.className = className;
+    node.textContent = text;
+    return node;
+}
+
+// The picker opens under the title, as wide as the panel. It is in the top
+// layer, so its position is worked out from the panel's.
+el.cities.addEventListener('beforetoggle', (e) => {
+    if ((e as ToggleEvent).newState !== 'open') return;
+    const panel = el.panel.getBoundingClientRect();
+    el.cities.style.top = `${el.cityName.getBoundingClientRect().bottom + 8}px`;
+    el.cities.style.left = `${panel.left}px`;
+    el.cities.style.width = `${panel.width}px`;
+});
